@@ -1,5 +1,7 @@
-import { CSVRow, ProcessingConfig, ProcessingStats, CityStateReference, Abbreviation, WordFrequency } from './types';
+import { CSVRow, ProcessingConfig, ProcessingStats, CityStateReference, Abbreviation, WordFrequency, DedupeAuditLookup } from './types';
 import { extractHyperlink, extractDomainFromUrl, tokenizeText, escapeRegExp } from './utils';
+
+const ROW_INDEX_KEY = '__row_index__';
 
 // State abbreviation mapping
 const STATE_ABBREVIATIONS: { [key: string]: string } = {
@@ -219,6 +221,30 @@ export function calculateWordFrequency(
   return frequencies;
 }
 
+const countPopulatedFields = (row: CSVRow): number => {
+  return Object.values(row).reduce((total, value) => {
+    if (value === null || value === undefined) return total;
+    const normalized = String(value).trim();
+    return normalized ? total + 1 : total;
+  }, 0);
+};
+
+const cloneWithoutMeta = (row: CSVRow): CSVRow => {
+  const cloned: CSVRow = { ...row };
+  if (ROW_INDEX_KEY in cloned) {
+    delete (cloned as any)[ROW_INDEX_KEY];
+  }
+  return cloned;
+};
+
+const stripMetaFromRows = (rows: CSVRow[]): void => {
+  for (const row of rows) {
+    if (ROW_INDEX_KEY in row) {
+      delete (row as any)[ROW_INDEX_KEY];
+    }
+  }
+};
+
 // Main processing function
 export function processCSVData(
   data: CSVRow[],
@@ -227,7 +253,7 @@ export function processCSVData(
   abbreviations: Abbreviation[],
   cityStateReference: CityStateReference[] = [],
   abortSignal?: AbortSignal
-): { processedData: CSVRow[]; cleanedData: CSVRow[]; stats: ProcessingStats } {
+): { processedData: CSVRow[]; cleanedData: CSVRow[]; stats: ProcessingStats; dedupeAuditLookup: DedupeAuditLookup } {
   
   const stats: ProcessingStats = {
     initialRows: data.length,
@@ -245,7 +271,7 @@ export function processCSVData(
   };
   
   if (data.length === 0) {
-    return { processedData: data, cleanedData: data, stats };
+    return { processedData: data, cleanedData: data, stats, dedupeAuditLookup: {} };
   }
   
   // --- PHASE 1: ROW-LEVEL CLEANING (1:1 MAPPING) ---
@@ -282,8 +308,9 @@ export function processCSVData(
     }
   }
 
-  let cleanedData = data.map((row) => {
+  let cleanedData = data.map((row, rowIndex) => {
     const newRow: CSVRow = { ...row };
+    (newRow as any)[ROW_INDEX_KEY] = rowIndex;
     const allColumns = Object.keys(row);
 
     // 1. Basic Column Processing
@@ -446,111 +473,102 @@ export function processCSVData(
   // --- PHASE 2: GROUPING & DEDUPLICATION (Produces processedData) ---
   // Clone cleanedData
   let processedData = JSON.parse(JSON.stringify(cleanedData));
+  const dedupeAuditLookup: DedupeAuditLookup = {};
 
   // 5. Grouping & Merging (Deduplication)
-  // If duplicate detection columns are selected, use them.
-  // Otherwise, fall back to Company Name if enabled.
-  let groupingColumns: string[] = [];
-  
-  if (config.duplicateDetectionColumns.length > 0) {
-    groupingColumns = config.duplicateDetectionColumns;
-  } else if (config.companyNameColumn) {
-    groupingColumns = [config.companyNameColumn];
-  }
+  const groupingColumns = config.duplicateDetectionColumns.length > 0
+    ? config.duplicateDetectionColumns
+    : [];
 
   if (groupingColumns.length > 0) {
     const groups = new Map<string, CSVRow[]>();
     const originalEntityNames = new Map<string, Set<string>>();
-    
-    // Bucketing
+
     for (const row of processedData) {
-        const keyParts = groupingColumns.map(col => 
-            String(row[col] || '').toLowerCase().trim()
-        );
-        const groupKey = keyParts.join('|||');
-        
-        if (!groups.has(groupKey)) {
-            groups.set(groupKey, []);
-            if (config.companyNameColumn) {
-                originalEntityNames.set(groupKey, new Set());
-            }
-        }
-        groups.get(groupKey)!.push(row);
-        
-        // Store original names if we are deduplicating (and have a company name column to track)
+      const keyParts = groupingColumns.map(col =>
+        String(row[col] || '').toLowerCase().trim()
+      );
+      const groupKey = keyParts.join('|||');
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, []);
         if (config.companyNameColumn) {
-             // We need to find the index in cleanedData to map back to original data
-             // But we don't have index easily here unless we kept it.
-             // However, processedData currently is 1:1 with cleanedData (and data) before this step.
-             // But wait, we're iterating processedData.
-             // Let's assume processedData order hasn't changed yet.
-             // BUT we need the ORIGINAL name from 'data'.
-             // To do this reliably, we should have added metadata index to rows, but we can't easily modify CSVRow type structure without impact.
-             // Let's use a simple counter if we assume iteration order is preserved.
+          originalEntityNames.set(groupKey, new Set());
         }
+      }
+      groups.get(groupKey)!.push(row);
     }
 
-    // Re-iterate to get original names using index?
-    // Actually, we can just build the groups first, then map.
-    // Better: let's use index in the loop.
-    processedData.forEach((row, idx) => {
-        const keyParts = groupingColumns.map(col => 
-            String(row[col] || '').toLowerCase().trim()
-        );
-        const groupKey = keyParts.join('|||');
-        
-        if (config.companyNameColumn) {
-             const originalName = String(data[idx][config.companyNameColumn] || '');
-             if (originalName && originalEntityNames.has(groupKey)) {
-                 originalEntityNames.get(groupKey)!.add(originalName);
-             }
-        }
+    processedData.forEach((row) => {
+      if (!config.companyNameColumn) return;
+      const keyParts = groupingColumns.map(col =>
+        String(row[col] || '').toLowerCase().trim()
+      );
+      const groupKey = keyParts.join('|||');
+      const originalName = String(row[config.companyNameColumn] || '');
+      if (originalName && originalEntityNames.has(groupKey)) {
+        originalEntityNames.get(groupKey)!.add(originalName);
+      }
     });
 
     const aggregatedRows: CSVRow[] = [];
+    const condensedRows: CSVRow[] = [];
+
     for (const [groupKey, rows] of groups.entries()) {
-        // Enrichment/Merge logic
-        // We merge ALL columns.
-        const valueMap = new Map<string, Set<string>>();
-        
-        for (const r of rows) {
-            for (const [k, v] of Object.entries(r)) {
-                const s = String(v).trim();
-                if (s) {
-                    if (!valueMap.has(k)) valueMap.set(k, new Set());
-                    valueMap.get(k)!.add(s);
-                }
-            }
+      const valueMap = new Map<string, Set<string>>();
+
+      for (const r of rows) {
+        for (const [k, v] of Object.entries(r)) {
+          const s = String(v).trim();
+          if (s) {
+            if (!valueMap.has(k)) valueMap.set(k, new Set());
+            valueMap.get(k)!.add(s);
+          }
         }
-        
-        const mergedRow: CSVRow = {};
-        for (const [k, vSet] of valueMap.entries()) {
-            // User Requirement: "Merge/Enrichment... Merge into 1 Master Record"
-            // Ideally, we want single values if they are unique. If multiple different values, we join them.
-            // If only 1 unique value exists across rows, that's the value.
-            const values = Array.from(vSet);
-            if (values.length === 1) {
-                mergedRow[k] = values[0];
-            } else {
-                mergedRow[k] = values.join(' | ');
-            }
+      }
+
+      const mergedRow: CSVRow = {};
+      for (const [k, vSet] of valueMap.entries()) {
+        const values = Array.from(vSet);
+        mergedRow[k] = values.length === 1 ? values[0] : values.join(' | ');
+      }
+
+      if (config.companyNameColumn) {
+        const origNames = originalEntityNames.get(groupKey);
+        if (origNames && origNames.size > 0) {
+          mergedRow['Original_Entity_Names'] = Array.from(origNames).join(' | ');
         }
-        
-        if (config.companyNameColumn) {
-            const origNames = originalEntityNames.get(groupKey);
-            if (origNames && origNames.size > 0) {
-                mergedRow['Original_Entity_Names'] = Array.from(origNames).join(' | ');
-            }
+      }
+
+      aggregatedRows.push(mergedRow);
+
+      let bestRow = rows[0];
+      let bestScore = countPopulatedFields(rows[0]);
+      for (let i = 1; i < rows.length; i++) {
+        const candidate = rows[i];
+        const candidateScore = countPopulatedFields(candidate);
+        if (candidateScore > bestScore) {
+          bestRow = candidate;
+          bestScore = candidateScore;
         }
-        
-        aggregatedRows.push(mergedRow);
+      }
+      condensedRows.push(cloneWithoutMeta(bestRow));
+
+      for (const r of rows) {
+        const idx = (r as any)[ROW_INDEX_KEY];
+        if (typeof idx === 'number') {
+          dedupeAuditLookup[idx] = mergedRow;
+        }
+      }
     }
-    
-    const rowsRemovedByGrouping = processedData.length - aggregatedRows.length;
+
+    const rowsRemovedByGrouping = processedData.length - condensedRows.length;
     if (rowsRemovedByGrouping > 0) stats.duplicatesRemoved += rowsRemovedByGrouping;
-    
-    processedData = aggregatedRows;
-    stats.rowsGrouped = processedData.length;
+
+    processedData = condensedRows;
+    stats.rowsGrouped = aggregatedRows.length;
+  } else {
+    stats.rowsGrouped = 0;
   }
 
   stats.totalRows = processedData.length;
@@ -578,7 +596,9 @@ export function processCSVData(
     return filtered;
   });
 
-  return { processedData: filteredProcessed, cleanedData, stats };
+  stripMetaFromRows(cleanedData);
+
+  return { processedData: filteredProcessed, cleanedData, stats, dedupeAuditLookup };
 }
 
 // Enhancement 2: Export to CSV with column selection and renaming
@@ -655,7 +675,8 @@ export function exportWordFrequencyToCSV(frequencies: WordFrequency[]): string {
 export function buildOriginalVsCleanedRows(
   originalData: CSVRow[],
   cleanedData: CSVRow[], // CHANGED: expects cleanedData (1:1)
-  columns?: string[]
+  columns?: string[],
+  aggregatedLookup?: DedupeAuditLookup
 ): CSVRow[] {
   if (originalData.length === 0 || cleanedData.length === 0) return [];
   
@@ -677,7 +698,9 @@ export function buildOriginalVsCleanedRows(
     
     for (const column of targetColumns) {
       const originalValue = originalData[i]?.[column] ?? '';
-      const cleanedValue = cleanedData[i]?.[column] ?? '';
+      const auditRow = aggregatedLookup ? aggregatedLookup[i] : undefined;
+      const cleanedSource = auditRow ?? cleanedData[i];
+      const cleanedValue = cleanedSource?.[column] ?? '';
       row[`Original_${column}`] = originalValue;
       row[`Cleaned_${column}`] = cleanedValue;
     }

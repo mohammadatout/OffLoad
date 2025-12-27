@@ -101,3 +101,5 @@ export interface CumulativeStats {
   duplicatesRemoved: number;
 }
 
+export type DedupeAuditLookup = Record<number, CSVRow>;
+

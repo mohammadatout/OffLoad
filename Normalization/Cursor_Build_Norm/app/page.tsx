@@ -42,6 +42,19 @@ import { autoDetectColumns, formatTimestamp, validateFilename } from '@/lib/util
 
 type ViewMode = 'upload' | 'setup' | 'results';
 
+const deriveDefaultSelectedColumns = (headers: string[]): string[] => {
+  const prioritized = headers.filter((header) => {
+    const lower = header.toLowerCase();
+    return (
+      lower.includes('name') ||
+      lower.includes('company') ||
+      lower.includes('entity')
+    );
+  });
+  if (prioritized.length > 0) return prioritized;
+  return headers.length > 0 ? [headers[0]] : [];
+};
+
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('upload');
@@ -70,6 +83,7 @@ export default function Home() {
     duplicatesRemoved: 0,
   });
   const [exclusionList, setExclusionList] = useState<string[]>([]);
+  const [dedupeAuditLookup, setDedupeAuditLookup] = useState<Record<number, CSVRow>>({});
 
   // Configuration state
   const [config, setConfig] = useState<ProcessingConfig>({
@@ -81,10 +95,10 @@ export default function Home() {
     cityStateValidationEnabled: false,
     cityColumn: '',
     stateColumn: '',
-    companyNameCleaningEnabled: false,
+    companyNameCleaningEnabled: true,
     companyNameColumn: '',
-    removeLegalEntities: true,
-    replaceAbbreviations: true,
+    removeLegalEntities: false,
+    replaceAbbreviations: false,
     selectedColumns: [],
     outputColumns: [],
     duplicateDetectionColumns: [],
@@ -171,6 +185,7 @@ export default function Home() {
     setProcessingStats(null);
     setProcessingError('');
     setViewMode('setup');
+    setDedupeAuditLookup({});
     
     const detected = autoDetectColumns(data.headers);
     const fallbackEntityColumn =
@@ -181,6 +196,7 @@ export default function Home() {
     setSuggestedCompanyColumn(fallbackEntityColumn);
     setIsCompanySuggestionAcknowledged(false);
     
+    const defaultSelectedColumns = deriveDefaultSelectedColumns(data.headers);
     const defaultWordColumns = detected.companyName
       ? [detected.companyName]
       : data.headers.length > 0
@@ -188,7 +204,7 @@ export default function Home() {
         : [];
     
     const newConfig: Partial<ProcessingConfig> = {
-      selectedColumns: data.headers,
+      selectedColumns: defaultSelectedColumns,
       outputColumns: data.headers,
       address1Column: detected.address1 || '',
       address2Column: detected.address2 || '',
@@ -273,7 +289,7 @@ export default function Home() {
         const abbreviations = loadAbbreviations();
         const legalEntities = loadLegalEntities();
         
-        const { processedData: processed, cleanedData: cleaned, stats } = processCSVData(
+        const { processedData: processed, cleanedData: cleaned, stats, dedupeAuditLookup: auditLookup } = processCSVData(
           fileData.data,
           config,
           legalEntities,
@@ -285,6 +301,7 @@ export default function Home() {
         setProcessedData(processed);
         setCleanedData(cleaned);
         setProcessingStats(stats);
+        setDedupeAuditLookup(auditLookup);
         const updatedTotals = updateCumulativeStats({
           rowsProcessed: stats.initialRows,
           companiesCleaned: stats.companiesProcessed,
@@ -325,6 +342,7 @@ export default function Home() {
       setProcessingStats(null);
       setProcessingError('');
       setCustomFilename('cleaned_data');
+      setDedupeAuditLookup({});
       setSuggestedCompanyColumn('');
       setIsCompanySuggestionAcknowledged(false);
       setConfig({
@@ -336,10 +354,10 @@ export default function Home() {
         cityStateValidationEnabled: false,
         cityColumn: '',
         stateColumn: '',
-        companyNameCleaningEnabled: false,
+        companyNameCleaningEnabled: true,
         companyNameColumn: '',
-        removeLegalEntities: true,
-        replaceAbbreviations: true,
+        removeLegalEntities: false,
+        replaceAbbreviations: false,
         selectedColumns: [],
         outputColumns: [],
         duplicateDetectionColumns: [],
@@ -362,6 +380,7 @@ export default function Home() {
     setFileData(null); // Also clear file data to force new upload
     setSuggestedCompanyColumn('');
     setIsCompanySuggestionAcknowledged(false);
+    setDedupeAuditLookup({});
   };
   
   const handleExport = ({ enhanced, comparison }: { enhanced: boolean; comparison: boolean }) => {
@@ -408,7 +427,8 @@ export default function Home() {
       const comparisonRows = buildOriginalVsCleanedRows(
         fileData.data,
         cleanedData, // Use cleanedData (Normalized but NOT Deduped/Merged)
-        undefined // Include ALL columns (original + cleaned)
+        undefined, // Include ALL columns (original + cleaned)
+        dedupeAuditLookup
       );
       
       if (comparisonRows.length > 0) {
@@ -536,43 +556,39 @@ export default function Home() {
                  {isConfigVisibleOnResults ? 'Hide Configuration' : 'Show Configuration'}
                </Button>
              )}
-             <div className="flex gap-3">
-               {(viewMode === 'setup' || viewMode === 'results') && (
-                   <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleReset}
-                      disabled={isProcessing}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Reset
+            <div className="flex gap-3">
+              {viewMode === 'setup' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset}
+                    disabled={isProcessing}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                  {isProcessing ? (
+                    <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
+                      <XCircle className="w-4 h-4 mr-2" /> Cancel
                     </Button>
-                    
-                    {viewMode === 'setup' && (
-                        isProcessing ? (
-                            <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
-                                <XCircle className="w-4 h-4 mr-2" /> Cancel
-                            </Button>
-                        ) : (
-                            <Button 
-                                variant="primary" 
-                                size="sm" 
-                                onClick={handleStartProcessing}
-                                disabled={!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing}
-                            >
-                                <Sparkles className="w-4 h-4 mr-2" /> Start Processing
-                            </Button>
-                        )
-                    )}
-
-                    {viewMode === 'results' && (
-                        <Button variant="outline" size="sm" onClick={handleStartNewTask}>
-                            <RefreshCw className="w-4 h-4 mr-2" /> New Task
-                        </Button>
-                    )}
-                   </>
-               )}
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleStartProcessing}
+                      disabled={!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" /> Start Processing
+                    </Button>
+                  )}
+                </>
+              )}
+              {viewMode === 'results' && (
+                <Button variant="outline" size="sm" onClick={handleStartNewTask}>
+                  <RefreshCw className="w-4 h-4 mr-2" /> New Task
+                </Button>
+              )}
             </div>
           </div>
           

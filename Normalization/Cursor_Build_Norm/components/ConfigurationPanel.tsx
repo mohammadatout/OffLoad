@@ -293,6 +293,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 checked={config.cityStateValidationEnabled}
                 onCheckedChange={(checked) => onConfigChange({ cityStateValidationEnabled: checked })}
                 disabled={!hasReferenceFile}
+                title={!hasReferenceFile ? 'Requires reference file upload' : undefined}
                 />
             </div>
 
@@ -325,9 +326,9 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </AccordionItem>
       
-      {/* 3. Column Mapping & Output */}
+      {/* 3. Output Columns & Renaming */}
       <AccordionItem
-        title="Column Mapping & Output"
+        title="Output Columns & Renaming"
         icon={<ArrowRightLeft className="w-5 h-5 text-purple-500" />}
         isOpen={openSections.mapping}
         onToggle={() => toggleSection('mapping')}
