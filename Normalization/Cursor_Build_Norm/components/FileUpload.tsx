@@ -239,7 +239,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 or click to browse
               </p>
-              <Button variant="primary" size="sm" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  mainFileInputRef.current?.click();
+                }}
+              >
                 Select File
               </Button>
               

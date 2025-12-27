@@ -46,6 +46,8 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('upload');
   const [showSplash, setShowSplash] = useState(true);
+  const [suggestedCompanyColumn, setSuggestedCompanyColumn] = useState('');
+  const [isCompanySuggestionAcknowledged, setIsCompanySuggestionAcknowledged] = useState(false);
   
   // Data state
   const [fileData, setFileData] = useState<FileData | null>(null);
@@ -171,6 +173,13 @@ export default function Home() {
     setViewMode('setup');
     
     const detected = autoDetectColumns(data.headers);
+    const fallbackEntityColumn =
+      detected.companyName ||
+      data.headers.find((header) => header.toLowerCase().includes('name')) ||
+      data.headers[0] ||
+      '';
+    setSuggestedCompanyColumn(fallbackEntityColumn);
+    setIsCompanySuggestionAcknowledged(false);
     
     const defaultWordColumns = detected.companyName
       ? [detected.companyName]
@@ -185,7 +194,7 @@ export default function Home() {
       address2Column: detected.address2 || '',
       cityColumn: detected.city || '',
       stateColumn: detected.state || '',
-      companyNameColumn: detected.companyName || '',
+      companyNameColumn: '',
       wordFrequencyColumns: defaultWordColumns,
     };
     
@@ -316,6 +325,8 @@ export default function Home() {
       setProcessingStats(null);
       setProcessingError('');
       setCustomFilename('cleaned_data');
+      setSuggestedCompanyColumn('');
+      setIsCompanySuggestionAcknowledged(false);
       setConfig({
         uppercaseConversion: false,
         normalizationCleanup: true,
@@ -349,6 +360,8 @@ export default function Home() {
     setCustomFilename('cleaned_data');
     setViewMode('upload');
     setFileData(null); // Also clear file data to force new upload
+    setSuggestedCompanyColumn('');
+    setIsCompanySuggestionAcknowledged(false);
   };
   
   const handleExport = ({ enhanced, comparison }: { enhanced: boolean; comparison: boolean }) => {
@@ -423,6 +436,11 @@ export default function Home() {
   };
   
   const isCompanyColumnMissing = !config.companyNameColumn;
+
+  const handleCompanyFieldSelection = (value: string) => {
+    handleConfigChange({ companyNameColumn: value });
+    setIsCompanySuggestionAcknowledged(Boolean(value));
+  };
   
   useEffect(() => {
     if (viewMode === 'results') {
@@ -647,7 +665,7 @@ export default function Home() {
                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                         {isCompanyColumnMissing && (
                             <Alert variant="warning">
-                                Please select a <strong>Company Name Column</strong> in the Configuration panel to enable full processing features.
+                                Please select the <strong>main Entity Name field</strong> to enable full processing features.
                             </Alert>
                         )}
                         
@@ -655,6 +673,16 @@ export default function Home() {
                             data={fileData.data} 
                             headers={fileData.headers} 
                             title="Input Data Preview"
+                            companyNameColumn={config.companyNameColumn}
+                            onCompanyNameColumnChange={handleCompanyFieldSelection}
+                            suggestedCompanyColumn={
+                                !isCompanySuggestionAcknowledged ? suggestedCompanyColumn : ''
+                            }
+                            onSuggestedCompanyColumnApply={
+                                !isCompanySuggestionAcknowledged && suggestedCompanyColumn
+                                  ? () => handleCompanyFieldSelection(suggestedCompanyColumn)
+                                  : undefined
+                            }
                         />
                         
                         <StatsPanel
