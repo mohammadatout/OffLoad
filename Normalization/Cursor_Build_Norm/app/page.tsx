@@ -11,6 +11,7 @@ import { ResultsDisplay } from '@/components/ResultsDisplay';
 import { StatsPanel } from '@/components/StatsPanel';
 import { PreviewTable } from '@/components/PreviewTable';
 import { ExportPanel } from '@/components/ExportPanel';
+import { ReferenceFileUpload } from '@/components/ReferenceFileUpload';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { AccordionItem } from '@/components/ui/Accordion';
@@ -38,7 +39,7 @@ import {
   updateCumulativeStats,
   CUMULATIVE_STATS_EVENT,
 } from '@/lib/storage';
-import { autoDetectColumns, formatTimestamp, validateFilename } from '@/lib/utils';
+import { autoDetectColumns, formatTimestamp, validateFilename, getParsedFieldName } from '@/lib/utils';
 
 type ViewMode = 'upload' | 'setup' | 'results';
 
@@ -69,6 +70,7 @@ export default function Home() {
   const [processedData, setProcessedData] = useState<CSVRow[]>([]);
   const [cleanedData, setCleanedData] = useState<CSVRow[]>([]);
   const [processingStats, setProcessingStats] = useState<ProcessingStats | null>(null);
+  const [referenceFileInfo, setReferenceFileInfo] = useState<{ name: string; size: number } | null>(null);
   
   // Processing state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -90,15 +92,15 @@ export default function Home() {
     uppercaseConversion: false,
     normalizationCleanup: true,
     addressParsingEnabled: false,
-    address1Column: '',
-    address2Column: '',
+    addressColumns: [],
+    addressDelimiter: ', ',
     cityStateValidationEnabled: false,
     cityColumn: '',
     stateColumn: '',
     companyNameCleaningEnabled: true,
     companyNameColumn: '',
-    removeLegalEntities: false,
-    replaceAbbreviations: false,
+    removeLegalEntities: true,
+    replaceAbbreviations: true,
     selectedColumns: [],
     outputColumns: [],
     duplicateDetectionColumns: [],
@@ -112,10 +114,19 @@ export default function Home() {
   const [dictionariesOpen, setDictionariesOpen] = useState(false);
   const [isConfigVisibleOnResults, setIsConfigVisibleOnResults] = useState(true);
 
+  const parsedFieldName = useMemo(
+    () => getParsedFieldName(config.addressColumns),
+    [config.addressColumns]
+  );
+
   const derivedColumns = useMemo(() => {
     const base = fileData?.headers ? [...fileData.headers] : [];
-    if (config.addressParsingEnabled && !base.includes('Full_Address')) {
-      base.push('Full_Address');
+    if (
+      config.addressParsingEnabled &&
+      config.addressColumns.length > 0 &&
+      !base.includes(parsedFieldName)
+    ) {
+      base.push(parsedFieldName);
     }
     if (config.cityStateValidationEnabled) {
         if (config.cityColumn && !base.includes(`${config.cityColumn}_Verification`)) base.push(`${config.cityColumn}_Verification`);
@@ -123,7 +134,7 @@ export default function Home() {
         if (!base.includes('City_State_Verification')) base.push('City_State_Verification');
     }
     return base;
-  }, [fileData?.headers, config.addressParsingEnabled, config.cityStateValidationEnabled, config.cityColumn, config.stateColumn]);
+  }, [fileData?.headers, config.addressParsingEnabled, config.addressColumns, parsedFieldName, config.cityStateValidationEnabled, config.cityColumn, config.stateColumn]);
   
   // Apply theme changes
   useEffect(() => {
@@ -203,21 +214,33 @@ export default function Home() {
         ? [data.headers[0]]
         : [];
     
+    const defaultAddressColumns = [
+      detected.address1,
+      detected.address2,
+    ].filter((col): col is string => Boolean(col));
+    
     const newConfig: Partial<ProcessingConfig> = {
       selectedColumns: defaultSelectedColumns,
       outputColumns: data.headers,
-      address1Column: detected.address1 || '',
-      address2Column: detected.address2 || '',
+      addressColumns: defaultAddressColumns,
+      addressDelimiter: ', ',
       cityColumn: detected.city || '',
       stateColumn: detected.state || '',
       companyNameColumn: '',
+      duplicateDetectionColumns: detected.companyName ? [detected.companyName] : [],
       wordFrequencyColumns: defaultWordColumns,
+      removeLegalEntities: true,
+      replaceAbbreviations: true,
     };
     
     setConfig(prev => ({ ...prev, ...newConfig }));
   };
   
-  const handleReferenceFileUploaded = (data: Record<string, any>[], mapping: ReferenceColumnMapping) => {
+  const handleReferenceFileUploaded = (
+    data: Record<string, any>[],
+    mapping: ReferenceColumnMapping,
+    fileInfo?: { name: string; size: number }
+  ) => {
     const transformedData: CityStateReference[] = data.map((row) => ({
       city: String(row[mapping.city] || ''),
       state: String(row[mapping.state] || ''),
@@ -226,6 +249,7 @@ export default function Home() {
     
     setReferenceData(transformedData);
     setReferenceMapping(mapping);
+    setReferenceFileInfo(fileInfo ?? null);
   };
   
   const handleAddWordToExclusion = (word: string) => {
@@ -233,18 +257,46 @@ export default function Home() {
     const updated = addLegalEntitiesBulk([word]);
     setExclusionList(updated);
   };
+
+  const handleReferenceFileCleared = () => {
+    setReferenceData([]);
+    setReferenceMapping(null);
+    setReferenceFileInfo(null);
+  };
   
   const handleConfigChange = (newConfig: Partial<ProcessingConfig>) => {
     setConfig(prev => {
+      const previousParsedFieldName = getParsedFieldName(prev.addressColumns);
       let updated: ProcessingConfig = { ...prev, ...newConfig };
-      
-      if (newConfig.addressParsingEnabled !== undefined) {
-        const hasFull = updated.outputColumns.includes('Full_Address');
-        if (newConfig.addressParsingEnabled && !hasFull) {
-          updated = { ...updated, outputColumns: [...updated.outputColumns, 'Full_Address'] };
-        } else if (!newConfig.addressParsingEnabled && hasFull) {
-          updated = { ...updated, outputColumns: updated.outputColumns.filter(col => col !== 'Full_Address') };
+      const nextParsedFieldName = getParsedFieldName(updated.addressColumns);
+
+      if (
+        newConfig.addressParsingEnabled !== undefined ||
+        newConfig.addressColumns !== undefined ||
+        newConfig.addressDelimiter !== undefined
+      ) {
+        const shouldIncludeParsedColumn =
+          updated.addressParsingEnabled && updated.addressColumns.length > 0;
+
+        let outputColumns = [...updated.outputColumns];
+
+        if (previousParsedFieldName !== nextParsedFieldName) {
+          outputColumns = outputColumns.filter(
+            (col) => col !== previousParsedFieldName
+          );
         }
+
+        if (shouldIncludeParsedColumn) {
+          if (!outputColumns.includes(nextParsedFieldName)) {
+            outputColumns = [...outputColumns, nextParsedFieldName];
+          }
+        } else {
+          outputColumns = outputColumns.filter(
+            (col) => col !== nextParsedFieldName
+          );
+        }
+
+        updated = { ...updated, outputColumns };
       }
 
       if (newConfig.cityStateValidationEnabled !== undefined || newConfig.cityColumn !== undefined || newConfig.stateColumn !== undefined) {
@@ -279,6 +331,10 @@ export default function Home() {
   
   const handleStartProcessing = async () => {
     if (!fileData || config.selectedColumns.length === 0) return;
+    if (config.cityStateValidationEnabled && referenceData.length === 0) {
+      setProcessingError('City & State validation requires a reference CSV. Please upload it below the toggle.');
+      return;
+    }
     
     setIsProcessing(true);
     setProcessingError('');
@@ -342,22 +398,24 @@ export default function Home() {
       setProcessingStats(null);
       setProcessingError('');
       setCustomFilename('cleaned_data');
+      setReferenceFileInfo(null);
       setDedupeAuditLookup({});
       setSuggestedCompanyColumn('');
       setIsCompanySuggestionAcknowledged(false);
+      handleReferenceFileCleared();
       setConfig({
         uppercaseConversion: false,
         normalizationCleanup: true,
         addressParsingEnabled: false,
-        address1Column: '',
-        address2Column: '',
+        addressColumns: [],
+        addressDelimiter: ', ',
         cityStateValidationEnabled: false,
         cityColumn: '',
         stateColumn: '',
         companyNameCleaningEnabled: true,
         companyNameColumn: '',
-        removeLegalEntities: false,
-        replaceAbbreviations: false,
+        removeLegalEntities: true,
+        replaceAbbreviations: true,
         selectedColumns: [],
         outputColumns: [],
         duplicateDetectionColumns: [],
@@ -381,6 +439,7 @@ export default function Home() {
     setSuggestedCompanyColumn('');
     setIsCompanySuggestionAcknowledged(false);
     setDedupeAuditLookup({});
+    handleReferenceFileCleared();
   };
   
   const handleExport = ({ enhanced, comparison }: { enhanced: boolean; comparison: boolean }) => {
@@ -456,9 +515,27 @@ export default function Home() {
   };
   
   const isCompanyColumnMissing = !config.companyNameColumn;
+  const isReferenceFileMissing = config.cityStateValidationEnabled && referenceData.length === 0;
 
   const handleCompanyFieldSelection = (value: string) => {
-    handleConfigChange({ companyNameColumn: value });
+    setConfig(prev => {
+      const existingDuplicates = prev.duplicateDetectionColumns || [];
+      let duplicateDetectionColumns = existingDuplicates;
+      if (value) {
+        if (existingDuplicates.length === 0) {
+          duplicateDetectionColumns = [value];
+        } else if (!existingDuplicates.includes(value)) {
+          duplicateDetectionColumns = [value, ...existingDuplicates];
+        }
+      } else {
+        duplicateDetectionColumns = existingDuplicates.filter(col => col !== prev.companyNameColumn);
+      }
+      return {
+        ...prev,
+        companyNameColumn: value,
+        duplicateDetectionColumns,
+      };
+    });
     setIsCompanySuggestionAcknowledged(Boolean(value));
   };
   
@@ -539,7 +616,7 @@ export default function Home() {
                   <p className="uppercase text-xs tracking-[0.35em] text-cisco-green mb-2">EntityMatch Pro</p>
                   <h1 className="text-3xl md:text-4xl font-bold">Data Wrangling Studio</h1>
                   <p className="text-sm md:text-base text-white/80">
-                    Linking scattered records into a single source of truth.
+                    Cleaning, standardizing, and deduplicating entity data at speed.
                   </p>
                 </div>
               </div>
@@ -577,7 +654,12 @@ export default function Home() {
                       variant="primary"
                       size="sm"
                       onClick={handleStartProcessing}
-                      disabled={!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing}
+                      disabled={
+                        !fileData ||
+                        config.selectedColumns.length === 0 ||
+                        isCompanyColumnMissing ||
+                        isReferenceFileMissing
+                      }
                     >
                       <Sparkles className="w-4 h-4 mr-2" /> Start Processing
                     </Button>
@@ -608,9 +690,21 @@ export default function Home() {
                   config={config}
                   onConfigChange={handleConfigChange}
                   availableColumns={derivedColumns}
-                  hasReferenceFile={referenceData.length > 0}
                   renames={config.columnRenames}
                   onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
+                  referenceUploadSlot={
+                    config.cityStateValidationEnabled ? (
+                      <ReferenceFileUpload
+                        onReferenceFileUploaded={handleReferenceFileUploaded}
+                        onReferenceFileCleared={handleReferenceFileCleared}
+                        existingFileInfo={referenceFileInfo}
+                        existingMapping={referenceMapping}
+                        isRequired={config.cityStateValidationEnabled}
+                      />
+                    ) : null
+                  }
+                  referenceUploadMissing={isReferenceFileMissing}
+                  showReferenceUploader={config.cityStateValidationEnabled}
                 />
                 
                 {/* Dictionaries Accordion */}
@@ -659,7 +753,6 @@ export default function Home() {
                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                         <FileUpload
                             onFileUploaded={handleFileUploaded}
-                            onReferenceFileUploaded={handleReferenceFileUploaded}
                         />
                      </motion.div>
                  )}
@@ -680,8 +773,8 @@ export default function Home() {
                  {viewMode === 'setup' && fileData && (
                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                         {isCompanyColumnMissing && (
-                            <Alert variant="warning">
-                                Please select the <strong>main Entity Name field</strong> to enable full processing features.
+                            <Alert className="bg-[#09304D] border-[#0051af] text-[#fbab2c]">
+                                Please select the <strong>main Entity/Company Name field</strong> to enable full processing features.
                             </Alert>
                         )}
                         
@@ -717,6 +810,28 @@ export default function Home() {
                                 onAddToExclusion: handleAddWordToExclusion
                             }}
                         />
+
+                        <div className="flex justify-end pt-2">
+                          {isProcessing ? (
+                            <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
+                              <XCircle className="w-4 h-4 mr-2" /> Cancel
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={handleStartProcessing}
+                              disabled={
+                                !fileData ||
+                                config.selectedColumns.length === 0 ||
+                                isCompanyColumnMissing ||
+                                isReferenceFileMissing
+                              }
+                            >
+                              <Sparkles className="w-4 h-4 mr-2" /> Start Processing
+                            </Button>
+                          )}
+                        </div>
                      </motion.div>
                  )}
                  

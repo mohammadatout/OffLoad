@@ -1,5 +1,5 @@
 import { CSVRow, ProcessingConfig, ProcessingStats, CityStateReference, Abbreviation, WordFrequency, DedupeAuditLookup } from './types';
-import { extractHyperlink, extractDomainFromUrl, tokenizeText, escapeRegExp } from './utils';
+import { extractHyperlink, extractDomainFromUrl, tokenizeText, escapeRegExp, getParsedFieldName } from './utils';
 
 const ROW_INDEX_KEY = '__row_index__';
 
@@ -54,10 +54,19 @@ const ADDRESS_REPLACEMENTS: { [key: string]: string } = {
   'unit': 'UNIT'
 };
 
-const ENTITY_STRIP_PATTERN = /[.@\-\(\)]/g;
+const ENTITY_STRIP_PATTERN = /[.@\(\)]/g;
+
+const normalizeEncoding = (value: string): string => {
+  if (!value) return value;
+  try {
+    return value.normalize('NFKC');
+  } catch {
+    return value;
+  }
+};
 
 function standardizeAddressComponent(value: string): string {
-  let cleaned = value;
+  let cleaned = normalizeEncoding(value);
   for (const [pattern, replacement] of Object.entries(ADDRESS_REPLACEMENTS)) {
     const regex = new RegExp(`\\b${pattern}\\b`, 'gi');
     cleaned = cleaned.replace(regex, replacement);
@@ -66,12 +75,14 @@ function standardizeAddressComponent(value: string): string {
 }
 
 function cleanEntityName(value: string): string {
+  let cleaned = normalizeEncoding(value);
+  
   // Preserve "&" meaning by expanding to "and" before aggressive cleanup
-  let cleaned = value.replace(/&/g, ' and ');
+  cleaned = cleaned.replace(/&/g, ' and ');
   
   // Enhancement 2: Aggressive cleanup - remove dashes, dots, and parens, but allow spaces
   cleaned = cleaned.replace(ENTITY_STRIP_PATTERN, ' ');
-  cleaned = cleaned.replace(/[.\-]/g, ''); 
+  cleaned = cleaned.replace(/[.]/g, ''); 
   
   // Normalize whitespace
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
@@ -92,7 +103,7 @@ function isEmail(value: string): boolean {
 
 // Clean whitespace and punctuation
 function cleanText(value: string, removePunctuation: boolean = false): string {
-  let cleaned = value.trim();
+  let cleaned = normalizeEncoding(value).trim();
   
   // Normalize whitespace
   cleaned = cleaned.replace(/\s+/g, ' ');
@@ -101,8 +112,7 @@ function cleanText(value: string, removePunctuation: boolean = false): string {
   cleaned = cleaned.replace(/&/g, ' and ');
   
   if (removePunctuation) {
-    // Strip all punctuation characters (including @ . - &) for non-email/url fields
-    cleaned = cleaned.replace(/[^\w\s]/gi, '');
+    cleaned = cleaned.replace(/[^\w\s-]/gi, '');
   }
   
   return cleaned;
@@ -110,7 +120,7 @@ function cleanText(value: string, removePunctuation: boolean = false): string {
 
 // Clean website URL
 function cleanWebsite(value: string): string {
-  let cleaned = value.trim().toLowerCase();
+  let cleaned = normalizeEncoding(value).trim().toLowerCase();
   
   // Remove protocol
   cleaned = cleaned.replace(/^https?:\/\//i, '');
@@ -126,7 +136,7 @@ function cleanWebsite(value: string): string {
 
 // Clean email
 function cleanEmail(value: string): string {
-  let cleaned = value.trim().toLowerCase();
+  let cleaned = normalizeEncoding(value).trim().toLowerCase();
   
   // Remove special characters except @ and .
   cleaned = cleaned.replace(/[^\w@.\-]/gi, '');
@@ -270,6 +280,10 @@ export function processCSVData(
     noDataCityStates: 0,
   };
   
+  const addressColumns = config.addressColumns || [];
+  const parsedFieldName = getParsedFieldName(addressColumns);
+  const addressDelimiter = config.addressDelimiter ?? ', ';
+
   if (data.length === 0) {
     return { processedData: data, cleanedData: data, stats, dedupeAuditLookup: {} };
   }
@@ -354,7 +368,7 @@ export function processCSVData(
         processedValue = cleanEntityName(processedValue);
       }
       
-      if (column === config.stateColumn && config.cityStateValidationEnabled) {
+      if (column === config.stateColumn) {
         processedValue = normalizeState(processedValue);
       }
       
@@ -362,23 +376,7 @@ export function processCSVData(
       newRow[column] = processedValue;
     }
 
-    // 2. Address Combination (Full_Address)
-    const hasAddress1 = Boolean(config.address1Column);
-    const hasAddress2 = Boolean(config.address2Column);
-    if (config.addressParsingEnabled && (hasAddress1 || hasAddress2)) {
-      const parts: string[] = [];
-      if (hasAddress1) {
-        const addr1 = String(newRow[config.address1Column] || '').trim();
-        if (addr1) parts.push(standardizeAddressComponent(addr1));
-      }
-      if (hasAddress2) {
-        const addr2 = String(newRow[config.address2Column] || '').trim();
-        if (addr2) parts.push(standardizeAddressComponent(addr2));
-      }
-      newRow['Full_Address'] = parts.join(', ');
-    }
-
-    // 3. City & State Validation
+    // 2. City & State Validation
     if (config.cityStateValidationEnabled && cityStateReference.length > 0 && config.cityColumn && config.stateColumn) {
       const city = String(newRow[config.cityColumn] || '').toLowerCase().trim();
       const state = String(newRow[config.stateColumn] || '').trim().toUpperCase();
@@ -443,7 +441,7 @@ export function processCSVData(
       newRow['City_State_Verification'] = cityStateValidation;
     }
 
-    // 4. Company Name Specific Cleaning (Abbreviations, Legal Entities)
+    // 3. Company Name Specific Cleaning (Abbreviations, Legal Entities)
     if (config.companyNameCleaningEnabled && config.companyNameColumn) {
        let companyName = String(newRow[config.companyNameColumn] || '');
        const originalCompany = String(row[config.companyNameColumn] || '');
@@ -465,6 +463,16 @@ export function processCSVData(
        
        newRow[config.companyNameColumn] = companyName;
        newRow[`${config.companyNameColumn}_Removed_Entities`] = removedEntities.join(', ');
+    }
+
+    // 4. Address Combination (Parsed Columns)
+    if (config.addressParsingEnabled && addressColumns.length > 0) {
+      const parts: string[] = [];
+      for (const column of addressColumns) {
+        const addr = String(newRow[column] || '').trim();
+        if (addr) parts.push(standardizeAddressComponent(addr));
+      }
+      newRow[parsedFieldName] = parts.join(addressDelimiter);
     }
 
     return newRow;

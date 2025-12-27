@@ -22,23 +22,28 @@ interface ConfigurationPanelProps {
   config: ProcessingConfig;
   onConfigChange: (config: Partial<ProcessingConfig>) => void;
   availableColumns: string[];
-  hasReferenceFile: boolean;
   renames: { [originalName: string]: string };
   onRenamesChange: (renames: { [originalName: string]: string }) => void;
+  referenceUploadSlot?: React.ReactNode;
+  referenceUploadMissing?: boolean;
+  showReferenceUploader?: boolean;
 }
 
 export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   config,
   onConfigChange,
   availableColumns,
-  hasReferenceFile,
   renames,
   onRenamesChange,
+  referenceUploadSlot,
+  referenceUploadMissing,
+  showReferenceUploader,
 }) => {
   // Accordion state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     cleaning: true,
-    address: false,
+    parsing: false,
+    validation: false,
     mapping: false,
     dedupe: false,
   });
@@ -223,22 +228,22 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </AccordionItem>
       
-      {/* 2. Address Intelligence */}
+      {/* 2. Parsing */}
       <AccordionItem
-        title="Address Intelligence"
+        title="Parsing"
         icon={<MapPin className="w-5 h-5 text-red-500" />}
-        isOpen={openSections.address}
-        onToggle={() => toggleSection('address')}
+        isOpen={openSections.parsing}
+        onToggle={() => toggleSection('parsing')}
       >
         <div className="space-y-6">
             {/* Address Parsing */}
             <div className="flex items-center justify-between">
                 <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                    Enable Address Parsing
+                    Parsing
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Combine address columns into Full_Address
+                    Parse addresses, compose company + state context, and build Full_Address
                 </p>
                 </div>
                 <Switch
@@ -248,85 +253,148 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             </div>
             
             {config.addressParsingEnabled && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-light-border dark:border-dark-border">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Address 1 Column
+                <div className="space-y-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-light-border dark:border-dark-border">
+                  <div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Select every column that should be parsed into <strong>Full_Address</strong>. Include suites, landmarks, company + state fragments—anything that enriches the final address string.
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto p-2 border border-dashed border-light-border dark:border-dark-border rounded-lg">
+                      {availableColumns.length === 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Upload a file to expose available columns.
+                        </p>
+                      )}
+                      {availableColumns.map((col) => (
+                        <div
+                          key={`address-${col}`}
+                          className={`
+                            flex items-center gap-2 px-3 py-2 rounded cursor-pointer text-sm transition-colors
+                            ${config.addressColumns.includes(col)
+                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'}
+                          `}
+                          onClick={() => toggleColumn(col, config.addressColumns, 'addressColumns')}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              config.addressColumns.includes(col)
+                                ? 'bg-indigo-600 border-indigo-600'
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                          >
+                            {config.addressColumns.includes(col) && (
+                              <CheckCircle className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <span className="truncate">{col}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Join delimiter
                     </label>
-                    <Select
-                    value={config.address1Column}
-                    onChange={(e) => onConfigChange({ address1Column: e.target.value })}
-                    options={[...emptyOption, ...columnOptions]}
-                    disabled={availableColumns.length === 0}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Address 2 Column
-                    </label>
-                    <Select
-                    value={config.address2Column}
-                    onChange={(e) => onConfigChange({ address2Column: e.target.value })}
-                    options={[...emptyOption, ...columnOptions]}
-                    disabled={availableColumns.length === 0}
-                    />
-                </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={config.addressDelimiter}
+                        onChange={(e) => onConfigChange({ addressDelimiter: e.target.value })}
+                        className="flex-1 rounded-lg border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-blue dark:focus:ring-accent-cyan focus:border-transparent"
+                        placeholder=", "
+                      />
+                      <div className="flex gap-1">
+                        {[
+                          ', ',
+                          ' - ',
+                          ' | ',
+                          '; ',
+                          ' / ',
+                        ].map((preset) => (
+                          <Button
+                            key={preset}
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs px-2"
+                            onClick={() => onConfigChange({ addressDelimiter: preset })}
+                          >
+                            {preset.trim() || ', '}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
             )}
             
-            <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+        </div>
+      </AccordionItem>
 
-            {/* City/State Validation */}
-            <div className="flex items-center justify-between">
-                <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                    City & State Validation
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {hasReferenceFile 
-                    ? 'Validate against loaded reference data'
-                    : 'Requires reference file upload'
-                    }
-                </p>
-                </div>
-                <Switch
-                checked={config.cityStateValidationEnabled}
-                onCheckedChange={(checked) => onConfigChange({ cityStateValidationEnabled: checked })}
-                disabled={!hasReferenceFile}
-                title={!hasReferenceFile ? 'Requires reference file upload' : undefined}
-                />
-            </div>
+      {/* 3. City & State Validation */}
+      <AccordionItem
+        title="City & State Validation"
+        icon={<MapPin className="w-5 h-5 text-cyan-500" />}
+        isOpen={openSections.validation}
+        onToggle={() => toggleSection('validation')}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+              <div>
+              <p className="font-medium text-gray-900 dark:text-gray-100">
+                  City & State Validation
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {config.cityStateValidationEnabled
+                  ? 'Validates against your reference CSV'
+                  : 'Toggle on to enable reference-based validation'}
+              </p>
+              </div>
+              <Switch
+              checked={config.cityStateValidationEnabled}
+              onCheckedChange={(checked) => onConfigChange({ cityStateValidationEnabled: checked })}
+              />
+          </div>
 
-            {config.cityStateValidationEnabled && hasReferenceFile && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-light-border dark:border-dark-border">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    City Column
-                    </label>
-                    <Select
-                    value={config.cityColumn}
-                    onChange={(e) => onConfigChange({ cityColumn: e.target.value })}
-                    options={[...emptyOption, ...columnOptions]}
-                    disabled={availableColumns.length === 0}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    State Column
-                    </label>
-                    <Select
-                    value={config.stateColumn}
-                    onChange={(e) => onConfigChange({ stateColumn: e.target.value })}
-                    options={[...emptyOption, ...columnOptions]}
-                    disabled={availableColumns.length === 0}
-                    />
-                </div>
-                </div>
-            )}
+          {config.cityStateValidationEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-light-border dark:border-dark-border">
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  City Column
+                  </label>
+                  <Select
+                  value={config.cityColumn}
+                  onChange={(e) => onConfigChange({ cityColumn: e.target.value })}
+                  options={[...emptyOption, ...columnOptions]}
+                  disabled={availableColumns.length === 0}
+                  />
+              </div>
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  State Column
+                  </label>
+                  <Select
+                  value={config.stateColumn}
+                  onChange={(e) => onConfigChange({ stateColumn: e.target.value })}
+                  options={[...emptyOption, ...columnOptions]}
+                  disabled={availableColumns.length === 0}
+                  />
+              </div>
+              </div>
+          )}
+
+          {showReferenceUploader && referenceUploadSlot && (
+              <div className="space-y-3">
+                  {referenceUploadMissing && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-sm">
+                          Reference file required to validate cities and states.
+                      </div>
+                  )}
+                  {referenceUploadSlot}
+              </div>
+          )}
         </div>
       </AccordionItem>
       
-      {/* 3. Output Columns & Renaming */}
+      {/* 4. Output Columns & Renaming */}
       <AccordionItem
         title="Output Columns & Renaming"
         icon={<ArrowRightLeft className="w-5 h-5 text-purple-500" />}
@@ -382,7 +450,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </AccordionItem>
 
-      {/* 4. Deduplication Strategy */}
+      {/* 5. Deduplication Strategy */}
       <AccordionItem
         title="Deduplication Strategy"
         icon={<Files className="w-5 h-5 text-orange-500" />}

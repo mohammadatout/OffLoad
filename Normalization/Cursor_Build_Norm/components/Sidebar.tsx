@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Switch } from './ui/Switch';
-import { FileSpreadsheet, FileText, Mail, Globe, MapPin, Sparkles, XCircle } from 'lucide-react';
+import { FileSpreadsheet, FileText, Mail, Globe, MapPin, Sparkles, XCircle, Zap, Clock, Activity } from 'lucide-react';
 import { ColumnInfo, CumulativeStats } from '@/lib/types';
 
 interface SidebarProps {
@@ -29,15 +30,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const emailColumns = columnInfo.filter(col => col.type === 'email').length;
   const websiteColumns = columnInfo.filter(col => col.type === 'website').length;
   const addressColumns = columnInfo.filter(col => col.type === 'address').length;
+  const wowHighlights = [
+    {
+      id: 'automation',
+      headline: 'Automation that replaces entire playbooks.',
+      subtext: 'Standardize names, emails, websites & addresses with one click.',
+      statLabel: 'Manual hours saved per week',
+      statValue: '12+',
+      callouts: ['Uppercase/on-brand cleanup', 'Address parsing + Full_Address', 'Live CSV preview'],
+      accentIcon: <Zap className="w-5 h-5" />,
+    },
+    {
+      id: 'dedupe',
+      headline: 'Entity resolution with audit trails.',
+      subtext: 'Smart dedupe keeps the richest record & logs every merge.',
+      statLabel: 'Duplicates removed so far',
+      statValue: cumulativeStats.duplicatesRemoved.toLocaleString(),
+      callouts: ['City & state confirmation', 'Abbreviation replacement', 'Legal entity removal'],
+      accentIcon: <Activity className="w-5 h-5" />,
+    },
+    {
+      id: 'velocity',
+      headline: 'Normalize six figures of rows in minutes.',
+      subtext: 'Parallel parsing + client-side CSV exports keep data on your device.',
+      statLabel: 'Rows processed all-time',
+      statValue: cumulativeStats.rowsProcessed.toLocaleString(),
+      callouts: ['Agile column selection', 'Original vs Clean audit file', 'Fast client-only processing'],
+      accentIcon: <Clock className="w-5 h-5" />,
+    },
+  ];
+  const [activeHighlight, setActiveHighlight] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveHighlight(prev => (prev + 1) % wowHighlights.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [wowHighlights.length]);
   
   return (
     <div className="w-80 min-h-screen bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-light-border dark:border-dark-border">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-accent-blue/10 dark:bg-accent-cyan/10">
-            <Sparkles className="w-6 h-6 text-accent-blue dark:text-accent-cyan" />
-          </div>
+        <div className="flex items-center">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
               EntityMatch Pro
@@ -67,6 +102,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
       
       {/* Stats Cards */}
       <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#09304D] via-[#0E1B6E] to-[#141E8F] text-white shadow-lg p-5">
+          <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_top,_rgba(251,171,44,0.35),_transparent_55%)]" />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={wowHighlights[activeHighlight].id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.45 }}
+              className="relative space-y-3"
+            >
+              <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-white/80">
+                {wowHighlights[activeHighlight].accentIcon}
+                Impact Snapshot
+              </div>
+              <p className="text-lg font-semibold leading-snug">
+                {wowHighlights[activeHighlight].headline}
+              </p>
+              <p className="text-sm text-white/85">
+                {wowHighlights[activeHighlight].subtext}
+              </p>
+              <div className="text-xs uppercase tracking-wide text-[#fbab2c] font-semibold">
+                Spotlight Features
+              </div>
+              <ul className="text-[13px] space-y-1">
+                {wowHighlights[activeHighlight].callouts.map((callout) => (
+                  <li key={callout} className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#fbab2c]" />
+                    {callout}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-baseline gap-2 pt-2">
+                <span className="text-3xl font-black">{wowHighlights[activeHighlight].statValue}</span>
+                <span className="text-xs uppercase tracking-wide text-white/80">
+                  {wowHighlights[activeHighlight].statLabel}
+                </span>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+          <div className="flex gap-1 mt-4">
+            {wowHighlights.map((item, index) => (
+              <span
+                key={item.id}
+                className={`h-1.5 flex-1 rounded-full transition-all ${index === activeHighlight ? 'bg-white' : 'bg-white/40'}`}
+              />
+            ))}
+          </div>
+        </div>
+
         <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
           Quick Info
         </h2>
@@ -82,38 +167,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
                 <FileSpreadsheet className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Total Columns</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {totalColumns}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Text Columns</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {textColumns}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <FileText className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </CardContent>
