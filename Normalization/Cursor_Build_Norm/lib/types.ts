@@ -13,10 +13,10 @@ export interface ProcessingConfig {
   uppercaseConversion: boolean;
   normalizationCleanup: boolean;
   
-  // Address Parsing
+  // Parsing
   addressParsingEnabled: boolean;
-  address1Column: string;
-  address2Column: string;
+  addressColumns: string[];
+  addressDelimiter: string;
   
   // City & State Validation
   cityStateValidationEnabled: boolean;

@@ -306,3 +306,11 @@ export function validateFilename(filename: string): boolean {
   return validPattern.test(filename);
 }
 
+export function getParsedFieldName(columns: string[]): string {
+  if (!columns || columns.length === 0) return 'Parsed_Address';
+  const sanitized = columns
+    .map(col => col.trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, ''))
+    .filter(Boolean);
+  return `Parsed_${sanitized.join('_') || 'Address'}`;
+}
+

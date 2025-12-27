@@ -47,7 +47,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
             <div className="flex flex-col gap-2 w-full lg:w-auto">
               <div>
                 <p className="text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                  Entity Name Field
+                  Entity/Company Name Field
                 </p>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400">
                   Please select the main field of the Entity Name.
@@ -56,7 +56,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
                 <div className="min-w-[220px]">
                   <Select
-                    value={companyNameColumn || ''}
+                    value={companyNameColumn || suggestedCompanyColumn || ''}
                     onChange={(event) => onCompanyNameColumnChange(event.target.value)}
                     options={companyOptions}
                   />
