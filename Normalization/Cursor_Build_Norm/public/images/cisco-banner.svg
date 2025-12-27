@@ -1,0 +1,111 @@
+<svg width="1920" height="640" viewBox="0 0 1920 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#031125"/>
+      <stop offset="100%" stop-color="#071e3a"/>
+    </linearGradient>
+    <linearGradient id="link" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34d2ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffd86a" stop-opacity="0.9"/>
+    </linearGradient>
+    <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="640" fill="url(#bg)"/>
+
+  <!-- Cisco logo -->
+  <g transform="translate(90 80)" fill="#6ddcff">
+    <rect x="0" y="-40" width="16" height="70" rx="8"/>
+    <rect x="32" y="-60" width="16" height="90" rx="8"/>
+    <rect x="64" y="-60" width="16" height="90" rx="8"/>
+    <rect x="96" y="-40" width="16" height="70" rx="8"/>
+    <rect x="128" y="-60" width="16" height="90" rx="8"/>
+    <rect x="24" y="20" width="12" height="10" opacity="0"/>
+    <text x="190" y="30" font-size="72" font-weight="600" letter-spacing="0.35em" font-family="Inter, 'Segoe UI', sans-serif">
+      CISCO
+    </text>
+  </g>
+
+  <!-- Icons -->
+  <g font-family="Inter, 'Segoe UI', sans-serif" font-weight="600">
+    <g transform="translate(540 65)">
+      <circle cx="0" cy="0" r="34" fill="#0c2340" stroke="#49d0ff" stroke-width="2"/>
+      <rect x="-20" y="-35" width="40" height="20" fill="#4ade80" rx="4"/>
+      <rect x="-20" y="-10" width="40" height="20" fill="#22d3ee" rx="4"/>
+      <rect x="-20" y="15" width="40" height="20" fill="#fbbf24" rx="4"/>
+    </g>
+    <g transform="translate(770 65)">
+      <circle cx="0" cy="0" r="34" fill="#0c2340" stroke="#49d0ff" stroke-width="2"/>
+      <path d="M-15 15 L0 -15 L15 15 Z" fill="#60a5fa"/>
+    </g>
+    <g transform="translate(1010 65)">
+      <rect x="-32" y="-32" width="64" height="64" rx="8" fill="#1e3a8a"/>
+      <rect x="-18" y="-18" width="36" height="36" rx="4" fill="#38bdf8"/>
+      <rect x="-30" y="20" width="60" height="14" fill="#0c2340" stroke="#38bdf8" stroke-width="2"/>
+    </g>
+    <g transform="translate(1290 65)">
+      <rect x="-40" y="-35" width="80" height="70" rx="10" fill="#1e3a8a"/>
+      <rect x="-15" y="-18" width="30" height="36" rx="4" fill="#38bdf8"/>
+      <rect x="-5" y="22" width="10" height="18" fill="#fbbf24"/>
+    </g>
+  </g>
+
+  <!-- Connection lines -->
+  <g stroke="url(#link)" stroke-width="2.2" opacity="0.8">
+    <path d="M170 500 L360 360 L560 430 L780 260 L1030 320 L1260 240 L1440 380 L1670 300"/>
+    <path d="M260 200 L520 150 L820 240 L1090 140 L1370 300 L1570 190"/>
+    <path d="M320 470 L640 260 L900 430 L1310 360 L1640 520"/>
+    <path d="M600 400 L860 300 L1180 420 L1480 260"/>
+  </g>
+
+  <!-- Nodes -->
+  <g filter="url(#nodeGlow)">
+    <circle cx="170" cy="500" r="13" fill="#34d2ff"/>
+    <circle cx="360" cy="360" r="15" fill="#34d2ff"/>
+    <circle cx="560" cy="430" r="12" fill="#ffd86a"/>
+    <circle cx="780" cy="260" r="18" fill="#ffd86a"/>
+    <circle cx="1030" cy="320" r="16" fill="#34d2ff"/>
+    <circle cx="1260" cy="240" r="14" fill="#ffd86a"/>
+    <circle cx="1440" cy="380" r="15" fill="#ffd86a"/>
+    <circle cx="1670" cy="300" r="12" fill="#34d2ff"/>
+    <circle cx="260" cy="200" r="11" fill="#34d2ff"/>
+    <circle cx="520" cy="150" r="10" fill="#34d2ff"/>
+    <circle cx="820" cy="240" r="11" fill="#34d2ff"/>
+    <circle cx="1090" cy="140" r="10" fill="#34d2ff"/>
+    <circle cx="1370" cy="300" r="12" fill="#ffd86a"/>
+    <circle cx="1570" cy="190" r="10" fill="#34d2ff"/>
+    <circle cx="320" cy="470" r="10" fill="#34d2ff"/>
+    <circle cx="640" cy="260" r="17" fill="#ffd86a"/>
+    <circle cx="900" cy="430" r="11" fill="#34d2ff"/>
+    <circle cx="1310" cy="360" r="16" fill="#ffd86a"/>
+    <circle cx="1640" cy="520" r="11" fill="#34d2ff"/>
+  </g>
+
+  <!-- Labels -->
+  <g font-family="Inter, 'Segoe UI', sans-serif" font-weight="600">
+    <text x="580" y="350" fill="#9ae6b4" font-size="18" letter-spacing="0.05em">
+      LINKING SCATTERED RECORDS INTO 1 ENTITY
+    </text>
+    <rect x="870" y="356" width="240" height="20" rx="10" fill="#0c2340" stroke="#38bdf8" stroke-width="2"/>
+    <rect x="870" y="356" width="140" height="20" rx="10" fill="#38bdf8"/>
+    <text x="930" y="372" fill="#cbd5f5" font-size="12">PROGRESS</text>
+
+    <text x="520" y="455" fill="#7fffd4" font-size="20" letter-spacing="0.08em">
+      NAME MATCHING VALIDATED
+    </text>
+
+    <text x="1080" y="220" fill="#fde68a" font-size="18">
+      ENTITY RESOLUTION IN PROGRESS
+    </text>
+    <text x="1300" y="430" fill="#fde68a" font-size="20">
+      LINKING DATA · SYSTEM INTEGRATION
+    </text>
+  </g>
+</svg>
+
