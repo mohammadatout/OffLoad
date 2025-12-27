@@ -151,25 +151,12 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 />
             </div>
 
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                Entity name field selection now lives in the <strong>Input Data Preview</strong> header and becomes available after a file upload.
+            </p>
+            
             {config.companyNameCleaningEnabled && (
                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Company Name Column <span className="text-red-500">*</span>
-                        </label>
-                        <Select
-                        value={config.companyNameColumn}
-                        onChange={(e) => onConfigChange({ companyNameColumn: e.target.value })}
-                        options={[...emptyOption, ...columnOptions]}
-                        disabled={availableColumns.length === 0}
-                        />
-                        {!config.companyNameColumn && (
-                        <p className="text-xs text-red-500 mt-1">
-                            Required for company normalization.
-                        </p>
-                        )}
-                    </div>
-                    
                     <div className="flex items-center justify-between">
                         <div>
                         <p className="font-medium text-gray-900 dark:text-gray-100">
