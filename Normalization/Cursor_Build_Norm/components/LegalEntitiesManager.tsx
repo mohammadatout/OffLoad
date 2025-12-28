@@ -4,18 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Badge } from './ui/Badge';
-import { Building2, Plus, Trash2 } from 'lucide-react';
+import { Building2, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   loadLegalEntities,
   addLegalEntitiesBulk,
   removeLegalEntity,
   LEGAL_ENTITIES_EVENT,
 } from '@/lib/storage';
+import { cleanPunctuation } from '@/lib/utils';
 
 export const LegalEntitiesManager: React.FC = () => {
   const [entities, setEntities] = useState<string[]>([]);
   const [newEntities, setNewEntities] = useState('');
+  const [duplicateMessage, setDuplicateMessage] = useState<string>('');
   
   useEffect(() => {
     loadData();
@@ -39,19 +41,32 @@ export const LegalEntitiesManager: React.FC = () => {
       return;
     }
     
+    // Clean punctuation and split by comma
     const entitiesToAdd = newEntities
       .split(',')
-      .map(e => e.trim())
+      .map(e => cleanPunctuation(e.trim()))
       .filter(Boolean);
     
     if (entitiesToAdd.length === 0) {
       return;
     }
     
-    addLegalEntitiesBulk(entitiesToAdd);
+    // Check for duplicates
+    const existingSet = new Set(entities.map(e => e.toUpperCase()));
+    const duplicates = entitiesToAdd.filter(e => existingSet.has(e.toUpperCase()));
+    const newItems = entitiesToAdd.filter(e => !existingSet.has(e.toUpperCase()));
+    
+    if (duplicates.length > 0) {
+      setDuplicateMessage(`Already exists: ${duplicates.join(', ')}`);
+      setTimeout(() => setDuplicateMessage(''), 4000);
+    }
+    
+    if (newItems.length > 0) {
+      addLegalEntitiesBulk(newItems);
+      loadData();
+    }
     
     setNewEntities('');
-    loadData();
   };
   
   const handleRemove = (entity: string) => {
@@ -60,27 +75,42 @@ export const LegalEntitiesManager: React.FC = () => {
   };
   
   return (
-    <Card>
+    <Card variant="obsidian">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <Building2 className="w-6 h-6 text-accent-blue dark:text-accent-cyan" />
-          <CardTitle>Legal Entity & Exclusion List</CardTitle>
+          <Building2 className="w-5 h-5 text-electric-cyan" />
+          <CardTitle className="text-sm">Legal Entity & Exclusion List</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-xs text-gray-500">
           Manage suffixes and custom exclusion terms that should be stripped from company names (e.g., LLC, Inc., Corp, HOLDINGS).
         </p>
         
+        {/* Duplicate Warning */}
+        <AnimatePresence>
+          {duplicateMessage && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded text-amber-400 text-xs"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {duplicateMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         {/* Add New Form */}
-        <div className="border border-light-border dark:border-dark-border rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+        <div className="border border-obsidian-border rounded p-3">
+          <h4 className="text-xs font-medium text-gray-300 mb-2">
             Add Legal Entities or Exclusions
           </h4>
           <div className="flex gap-2">
             <Input
               type="text"
-              placeholder="Enter values separated by commas (e.g., LLC, INC, HOLDINGS)"
+              placeholder="Enter values separated by commas"
               value={newEntities}
               onChange={(e) => setNewEntities(e.target.value)}
               onKeyPress={(e) => {
@@ -88,47 +118,49 @@ export const LegalEntitiesManager: React.FC = () => {
                   handleAdd();
                 }
               }}
-              className="flex-1"
+              className="flex-1 text-sm"
             />
             <Button
               variant="primary"
-              size="md"
+              size="sm"
               onClick={handleAdd}
               disabled={!newEntities.trim()}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add
+              <Plus className="w-4 h-4" />
             </Button>
           </div>
+          <p className="text-[10px] text-gray-600 mt-2">
+            Punctuation will be automatically removed
+          </p>
         </div>
         
         {/* Entities List */}
         <div>
-          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+          <h4 className="text-xs font-medium text-gray-300 mb-2">
             Current Entries ({entities.length})
           </h4>
           
           {entities.length === 0 ? (
-            <div className="text-center py-8 border border-dashed border-light-border dark:border-dark-border rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-center py-6 border border-dashed border-obsidian-border rounded">
+              <p className="text-xs text-gray-600">
                 No legal entities configured yet
               </p>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
               {entities.map((entity, idx) => (
                 <div
                   key={idx}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-light-border dark:border-dark-border"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-obsidian-hover border border-obsidian-border text-xs"
                 >
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  <span className="font-medium text-gray-300">
                     {entity}
                   </span>
                   <button
                     onClick={() => handleRemove(entity)}
-                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                    className="text-gray-600 hover:text-neon-red transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ))}
@@ -137,13 +169,12 @@ export const LegalEntitiesManager: React.FC = () => {
         </div>
         
         {/* Default Entities Info */}
-        <div className="border-t border-light-border dark:border-dark-border pt-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            <strong>Default entries included:</strong> LLC, L.L.C., INC, CORPORATION, CORP, LTD, LIMITED, CO, COMPANY, LLP, LP, PLC, SA, GMBH, AG
+        <div className="border-t border-obsidian-border pt-3">
+          <p className="text-[10px] text-gray-600">
+            <strong className="text-gray-500">Default entries:</strong> LLC, INC, CORPORATION, CORP, LTD, LIMITED, CO, COMPANY, LLP, LP, PLC, SA, GMBH, AG
           </p>
         </div>
       </CardContent>
     </Card>
   );
 };
-

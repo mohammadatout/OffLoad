@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
-import { BookText, Plus, Pencil, Trash2, Save, X, Search } from 'lucide-react';
+import { BookText, Plus, Pencil, Trash2, Save, X, Search, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Abbreviation } from '@/lib/types';
 import {
   loadAbbreviations,
@@ -13,12 +14,14 @@ import {
   updateAbbreviation,
   deleteAbbreviation,
 } from '@/lib/storage';
+import { cleanPunctuation } from '@/lib/utils';
 
 export const AbbreviationManager: React.FC = () => {
   const [abbreviations, setAbbreviations] = useState<Abbreviation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [duplicateMessage, setDuplicateMessage] = useState<string>('');
   
   const [newCompanyName, setNewCompanyName] = useState('');
   const [newAbbreviations, setNewAbbreviations] = useState('');
@@ -40,16 +43,29 @@ export const AbbreviationManager: React.FC = () => {
       return;
     }
     
+    // Clean punctuation from company name and abbreviations
+    const cleanedCompanyName = cleanPunctuation(newCompanyName.trim());
     const abbrArray = newAbbreviations
       .split(';')
-      .map(s => s.trim())
+      .map(s => cleanPunctuation(s.trim()))
       .filter(Boolean);
     
     if (abbrArray.length === 0) {
       return;
     }
     
-    addAbbreviation(newCompanyName.trim(), abbrArray);
+    // Check for duplicate company name
+    const existingCompany = abbreviations.find(
+      a => a.companyName.toUpperCase() === cleanedCompanyName.toUpperCase()
+    );
+    
+    if (existingCompany) {
+      setDuplicateMessage(`"${cleanedCompanyName}" already exists in the abbreviation list.`);
+      setTimeout(() => setDuplicateMessage(''), 4000);
+      return;
+    }
+    
+    addAbbreviation(cleanedCompanyName, abbrArray);
     
     setNewCompanyName('');
     setNewAbbreviations('');
@@ -68,16 +84,28 @@ export const AbbreviationManager: React.FC = () => {
       return;
     }
     
+    const cleanedCompanyName = cleanPunctuation(editCompanyName.trim());
     const abbrArray = editAbbreviations
       .split(';')
-      .map(s => s.trim())
+      .map(s => cleanPunctuation(s.trim()))
       .filter(Boolean);
     
     if (abbrArray.length === 0) {
       return;
     }
     
-    updateAbbreviation(editingId, editCompanyName.trim(), abbrArray);
+    // Check for duplicate (excluding current entry)
+    const existingCompany = abbreviations.find(
+      a => a.companyName.toUpperCase() === cleanedCompanyName.toUpperCase() && a.id !== editingId
+    );
+    
+    if (existingCompany) {
+      setDuplicateMessage(`"${cleanedCompanyName}" already exists in the abbreviation list.`);
+      setTimeout(() => setDuplicateMessage(''), 4000);
+      return;
+    }
+    
+    updateAbbreviation(editingId, cleanedCompanyName, abbrArray);
     
     setEditingId(null);
     setEditCompanyName('');
@@ -107,152 +135,149 @@ export const AbbreviationManager: React.FC = () => {
   });
   
   return (
-    <Card>
+    <Card variant="obsidian">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <BookText className="w-6 h-6 text-accent-blue dark:text-accent-cyan" />
-            <CardTitle>Abbreviation Manager</CardTitle>
+            <BookText className="w-5 h-5 text-electric-purple" />
+            <CardTitle className="text-sm">Abbreviation Manager</CardTitle>
           </div>
           <Button
             variant="primary"
-            size="sm"
+            size="xs"
             onClick={() => setIsAdding(true)}
             disabled={isAdding}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New
+            <Plus className="w-3 h-3 mr-1" />
+            Add
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
+        {/* Duplicate Warning */}
+        <AnimatePresence>
+          {duplicateMessage && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded text-amber-400 text-xs"
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {duplicateMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-500" />
           <Input
             type="text"
             placeholder="Search abbreviations..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-8 text-sm h-8"
           />
         </div>
         
         {/* Add New Form */}
-        {isAdding && (
-          <div className="border border-light-border dark:border-dark-border rounded-lg p-4 bg-blue-50 dark:bg-blue-900/10">
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
-              Add New Abbreviation Rule
-            </h4>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Company Name
-                </label>
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border border-electric-cyan/30 rounded p-3 bg-electric-cyan/5"
+            >
+              <h4 className="text-xs font-medium text-gray-300 mb-2">
+                Add New Abbreviation Rule
+              </h4>
+              <p className="text-[10px] text-gray-500 mb-2">
+                Punctuation will be automatically removed
+              </p>
+              <div className="space-y-2">
                 <Input
                   type="text"
-                  placeholder="e.g., International Business Machines"
+                  placeholder="Company Name (e.g., International Business Machines)"
                   value={newCompanyName}
                   onChange={(e) => setNewCompanyName(e.target.value)}
+                  className="text-sm h-8"
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Abbreviations (separated by semicolons)
-                </label>
                 <Input
                   type="text"
-                  placeholder="e.g., IBM; I.B.M.; I B M"
+                  placeholder="Abbreviations (semicolon-separated, e.g., IBM; I.B.M.)"
                   value={newAbbreviations}
                   onChange={(e) => setNewAbbreviations(e.target.value)}
+                  className="text-sm h-8"
                 />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => {
+                      setIsAdding(false);
+                      setNewCompanyName('');
+                      setNewAbbreviations('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="xs"
+                    onClick={handleAdd}
+                    disabled={!newCompanyName.trim() || !newAbbreviations.trim()}
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
-              
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsAdding(false);
-                    setNewCompanyName('');
-                    setNewAbbreviations('');
-                  }}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleAdd}
-                  disabled={!newCompanyName.trim() || !newAbbreviations.trim()}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Abbreviations List */}
         {filteredAbbreviations.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="text-center py-6">
+            <p className="text-xs text-gray-600">
               {searchTerm 
-                ? 'No abbreviations found matching your search'
-                : 'No abbreviations yet. Add your first abbreviation rule above.'
+                ? 'No abbreviations found'
+                : 'No abbreviations yet'
               }
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 max-h-60 overflow-y-auto">
             {filteredAbbreviations.map((abbr) => (
               <div
                 key={abbr.id}
-                className="border border-light-border dark:border-dark-border rounded-lg p-4"
+                className="border border-obsidian-border rounded p-3"
               >
                 {editingId === abbr.id ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Company Name
-                      </label>
-                      <Input
-                        type="text"
-                        value={editCompanyName}
-                        onChange={(e) => setEditCompanyName(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Abbreviations (separated by semicolons)
-                      </label>
-                      <Input
-                        type="text"
-                        value={editAbbreviations}
-                        onChange={(e) => setEditAbbreviations(e.target.value)}
-                      />
-                    </div>
-                    
+                  <div className="space-y-2">
+                    <Input
+                      type="text"
+                      value={editCompanyName}
+                      onChange={(e) => setEditCompanyName(e.target.value)}
+                      className="text-sm h-8"
+                    />
+                    <Input
+                      type="text"
+                      value={editAbbreviations}
+                      onChange={(e) => setEditAbbreviations(e.target.value)}
+                      className="text-sm h-8"
+                    />
                     <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCancelEdit}
-                      >
-                        <X className="w-4 h-4 mr-2" />
+                      <Button variant="ghost" size="xs" onClick={handleCancelEdit}>
                         Cancel
                       </Button>
                       <Button
                         variant="primary"
-                        size="sm"
+                        size="xs"
                         onClick={handleSaveEdit}
                         disabled={!editCompanyName.trim() || !editAbbreviations.trim()}
                       >
-                        <Save className="w-4 h-4 mr-2" />
                         Save
                       </Button>
                     </div>
@@ -261,37 +286,35 @@ export const AbbreviationManager: React.FC = () => {
                   <div>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        <h4 className="text-sm font-medium text-gray-200 mb-1">
                           {abbr.companyName}
                         </h4>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1">
                           {abbr.abbreviations.map((a, idx) => (
-                            <Badge key={idx} variant="info">
+                            <span
+                              key={idx}
+                              className="px-1.5 py-0.5 text-[10px] bg-electric-purple/20 text-electric-purple rounded"
+                            >
                               {a}
-                            </Badge>
+                            </span>
                           ))}
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                      <div className="flex gap-1 ml-2">
+                        <button
                           onClick={() => handleStartEdit(abbr)}
+                          className="p-1 text-gray-500 hover:text-gray-300 transition-colors"
                         >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(abbr.id)}
+                          className="p-1 text-gray-500 hover:text-neon-red transition-colors"
                         >
-                          <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        </Button>
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Updated: {abbr.updatedAt.toLocaleDateString()}
-                    </p>
                   </div>
                 )}
               </div>
@@ -302,4 +325,3 @@ export const AbbreviationManager: React.FC = () => {
     </Card>
   );
 };
-

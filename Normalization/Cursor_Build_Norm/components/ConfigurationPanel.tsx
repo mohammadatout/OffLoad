@@ -5,7 +5,6 @@ import { AccordionItem } from './ui/Accordion';
 import { Switch } from './ui/Switch';
 import { Select } from './ui/Select';
 import { Button } from './ui/Button';
-import { ColumnRenamer } from './ColumnRenamer';
 import { 
   Settings, 
   Sparkles, 
@@ -14,10 +13,9 @@ import {
   Files, 
   CheckCircle, 
   XCircle,
-  ArrowRightLeft,
   Phone,
   Globe,
-  Link,
+  SplitSquareHorizontal,
 } from 'lucide-react';
 import { ProcessingConfig } from '@/lib/types';
 
@@ -235,7 +233,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* 2. Parsing */}
       <AccordionItem
         title="Parsing"
-        icon={<MapPin className="w-5 h-5 text-red-500" />}
+        icon={<SplitSquareHorizontal className="w-5 h-5 text-indigo-500" />}
         isOpen={openSections.parsing}
         onToggle={() => toggleSection('parsing')}
       >
@@ -413,7 +411,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                   Website/URL Normalization
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Clean URLs and extract domains
+                  Strip protocol (http/https), www, and path - keep domain only
                 </p>
               </div>
               <Switch
@@ -465,57 +463,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             )}
           </div>
           
-          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
-          
-          {/* Document Link Processing */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  Document Link Processing
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Extract file names and types from document URLs
-                </p>
-              </div>
-              <Switch
-                checked={config.extractDocumentInfo}
-                onCheckedChange={(checked) => onConfigChange({ extractDocumentInfo: checked })}
-              />
-            </div>
-            
-            {config.extractDocumentInfo && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Document Link Columns
-                  </p>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Supports: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ZIP, RAR
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                    {availableColumns.map((col) => (
-                      <div
-                        key={`doc-${col}`}
-                        className={`
-                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                          ${config.documentLinkColumns?.includes(col)
-                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }
-                        `}
-                        onClick={() => toggleColumn(col, config.documentLinkColumns || [], 'documentLinkColumns')}
-                      >
-                        <Link className="w-3 h-3" />
-                        <span className="truncate">{col}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
       </AccordionItem>
 
       {/* 3. City & State Validation */}
@@ -583,63 +531,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </AccordionItem>
       
-      {/* 4. Output Columns & Renaming */}
-      <AccordionItem
-        title="Output Columns & Renaming"
-        icon={<ArrowRightLeft className="w-5 h-5 text-purple-500" />}
-        isOpen={openSections.mapping}
-        onToggle={() => toggleSection('mapping')}
-      >
-        <div className="space-y-6">
-            {/* Output Selection */}
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                    <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">Include in Export (Clean File)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Select which columns appear in the <strong>Clean Build</strong> export. 
-                          This does not affect the Original vs Clean audit file (it always includes every column).
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => selectAll('outputColumns')} className="h-6 text-xs">All</Button>
-                        <Button variant="ghost" size="sm" onClick={() => clearAll('outputColumns')} className="h-6 text-xs">None</Button>
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-light-border dark:border-dark-border rounded-lg">
-                    {availableColumns.map((col) => (
-                        <div 
-                            key={`out-${col}`} 
-                            className={`
-                                flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                                ${config.outputColumns.includes(col) 
-                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                }
-                            `}
-                            onClick={() => toggleColumn(col, config.outputColumns, 'outputColumns')}
-                        >
-                             <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.outputColumns.includes(col) ? 'bg-green-600 border-green-600' : 'border-gray-300 dark:border-gray-600'}`}>
-                                {config.outputColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" />}
-                            </div>
-                            <span className="truncate">{col}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-            
-            <div className="w-full h-px bg-light-border dark:bg-dark-border" />
-            
-            {/* Renamer */}
-            <ColumnRenamer 
-                columns={availableColumns}
-                renames={renames}
-                onRenamesChange={onRenamesChange}
-            />
-        </div>
-      </AccordionItem>
-
-      {/* 5. Deduplication Strategy */}
+      {/* Deduplication Strategy */}
       <AccordionItem
         title="Deduplication Strategy"
         icon={<Files className="w-5 h-5 text-orange-500" />}

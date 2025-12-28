@@ -324,7 +324,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   />
                 </div>
                 <p className="text-[10px] text-center text-gray-600 mt-3">
-                  by Mohammad Atout
+                  Developed by Americas Sales Digitization
+                  <br />
+                  <span className="text-gray-500">(Mohammad Atout)</span>
                 </p>
               </div>
             </div>
