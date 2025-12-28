@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import clsx from 'clsx';
 import { Sidebar } from '@/components/Sidebar';
 import { FileUpload } from '@/components/FileUpload';
@@ -12,10 +12,15 @@ import { StatsPanel } from '@/components/StatsPanel';
 import { PreviewTable } from '@/components/PreviewTable';
 import { ExportPanel } from '@/components/ExportPanel';
 import { ReferenceFileUpload } from '@/components/ReferenceFileUpload';
+import { ColumnProfiler } from '@/components/ColumnProfiler';
+import { ProcessingProgressBar } from '@/components/ProcessingProgressBar';
+import { DataQualityScoreCard } from '@/components/DataQualityScoreCard';
+import { ConfigurationManager } from '@/components/ConfigurationManager';
+import { BatchFileUpload } from '@/components/BatchFileUpload';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { AccordionItem } from '@/components/ui/Accordion';
-import { RefreshCw, Sparkles, Download, Loader2, XCircle, BookOpen } from 'lucide-react';
+import { RefreshCw, Sparkles, Download, Loader2, XCircle, BookOpen, BarChart3, Files } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { 
@@ -26,6 +31,7 @@ import {
   CityStateReference,
   ReferenceColumnMapping,
   CumulativeStats,
+  ProcessingProgress,
 } from '@/lib/types';
 import { processCSVData, exportToCSV, buildOriginalVsCleanedRows } from '@/lib/dataProcessing';
 import { 
@@ -38,6 +44,8 @@ import {
   loadCumulativeStats,
   updateCumulativeStats,
   CUMULATIVE_STATS_EVENT,
+  saveLastConfiguration,
+  loadLastConfiguration,
 } from '@/lib/storage';
 import { autoDetectColumns, formatTimestamp, validateFilename, getParsedFieldName } from '@/lib/utils';
 
@@ -101,6 +109,18 @@ export default function Home() {
     companyNameColumn: '',
     removeLegalEntities: true,
     replaceAbbreviations: true,
+    // Phone processing
+    phoneNormalizationEnabled: false,
+    phoneColumns: [],
+    phoneFormat: 'NATIONAL',
+    // Website processing
+    websiteNormalizationEnabled: false,
+    websiteColumns: [],
+    extractDomain: true,
+    // Document link processing
+    documentLinkColumns: [],
+    extractDocumentInfo: false,
+    // Columns
     selectedColumns: [],
     outputColumns: [],
     duplicateDetectionColumns: [],
@@ -113,6 +133,12 @@ export default function Home() {
   // Dictionaries Accordion State
   const [dictionariesOpen, setDictionariesOpen] = useState(false);
   const [isConfigVisibleOnResults, setIsConfigVisibleOnResults] = useState(true);
+  
+  // New feature states
+  const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null);
+  const [showColumnProfiler, setShowColumnProfiler] = useState(false);
+  const [selectedProfileColumn, setSelectedProfileColumn] = useState<string>('');
+  const [showBatchMode, setShowBatchMode] = useState(false);
 
   const parsedFieldName = useMemo(
     () => getParsedFieldName(config.addressColumns),
@@ -329,6 +355,10 @@ export default function Home() {
     });
   };
   
+  const handleProgressUpdate = useCallback((progress: ProcessingProgress) => {
+    setProcessingProgress(progress);
+  }, []);
+
   const handleStartProcessing = async () => {
     if (!fileData || config.selectedColumns.length === 0) return;
     if (config.cityStateValidationEnabled && referenceData.length === 0) {
@@ -338,46 +368,56 @@ export default function Home() {
     
     setIsProcessing(true);
     setProcessingError('');
+    setProcessingProgress(null);
     abortControllerRef.current = new AbortController();
     
-    setTimeout(() => {
-      try {
-        const abbreviations = loadAbbreviations();
-        const legalEntities = loadLegalEntities();
-        
-        const { processedData: processed, cleanedData: cleaned, stats, dedupeAuditLookup: auditLookup } = processCSVData(
-          fileData.data,
-          config,
-          legalEntities,
-          abbreviations,
-          referenceData,
-          abortControllerRef.current?.signal
-        );
-        
-        setProcessedData(processed);
-        setCleanedData(cleaned);
-        setProcessingStats(stats);
-        setDedupeAuditLookup(auditLookup);
-        const updatedTotals = updateCumulativeStats({
-          rowsProcessed: stats.initialRows,
-          companiesCleaned: stats.companiesProcessed,
-          duplicatesRemoved: stats.duplicatesRemoved,
-        });
-        setCumulativeStats(updatedTotals);
-        setViewMode('results');
-        setIsProcessing(false);
-        abortControllerRef.current = null;
-      } catch (error: any) {
-        if (error.message === 'Processing cancelled') {
-          setProcessingError('Processing was cancelled');
-        } else {
-          console.error('Processing error:', error);
-          setProcessingError(`An error occurred during processing: ${error.message || 'Unknown error'}. Please check your configuration.`);
+    // Save configuration for recurring files
+    saveLastConfiguration(config);
+    
+    // Use requestAnimationFrame for smoother UI updates
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        try {
+          const abbreviations = loadAbbreviations();
+          const legalEntities = loadLegalEntities();
+          
+          const { processedData: processed, cleanedData: cleaned, stats, dedupeAuditLookup: auditLookup } = processCSVData(
+            fileData.data,
+            config,
+            legalEntities,
+            abbreviations,
+            referenceData,
+            abortControllerRef.current?.signal,
+            handleProgressUpdate
+          );
+          
+          setProcessedData(processed);
+          setCleanedData(cleaned);
+          setProcessingStats(stats);
+          setDedupeAuditLookup(auditLookup);
+          const updatedTotals = updateCumulativeStats({
+            rowsProcessed: stats.initialRows,
+            companiesCleaned: stats.companiesProcessed,
+            duplicatesRemoved: stats.duplicatesRemoved,
+          });
+          setCumulativeStats(updatedTotals);
+          setViewMode('results');
+          setIsProcessing(false);
+          setProcessingProgress(null);
+          abortControllerRef.current = null;
+        } catch (error: any) {
+          if (error.message === 'Processing cancelled') {
+            setProcessingError('Processing was cancelled');
+          } else {
+            console.error('Processing error:', error);
+            setProcessingError(`An error occurred during processing: ${error.message || 'Unknown error'}. Please check your configuration.`);
+          }
+          setIsProcessing(false);
+          setProcessingProgress(null);
+          abortControllerRef.current = null;
         }
-        setIsProcessing(false);
-        abortControllerRef.current = null;
-      }
-    }, 500);
+      }, 100);
+    });
   };
   
   const handleCancelProcessing = () => {
@@ -388,6 +428,46 @@ export default function Home() {
     }
   };
   
+  const getDefaultConfig = (): ProcessingConfig => ({
+    uppercaseConversion: false,
+    normalizationCleanup: true,
+    addressParsingEnabled: false,
+    addressColumns: [],
+    addressDelimiter: ', ',
+    cityStateValidationEnabled: false,
+    cityColumn: '',
+    stateColumn: '',
+    companyNameCleaningEnabled: true,
+    companyNameColumn: '',
+    removeLegalEntities: true,
+    replaceAbbreviations: true,
+    phoneNormalizationEnabled: false,
+    phoneColumns: [],
+    phoneFormat: 'NATIONAL',
+    websiteNormalizationEnabled: false,
+    websiteColumns: [],
+    extractDomain: true,
+    documentLinkColumns: [],
+    extractDocumentInfo: false,
+    selectedColumns: [],
+    outputColumns: [],
+    duplicateDetectionColumns: [],
+    columnRenames: {},
+    wordFrequencyEnabled: false,
+    wordFrequencyColumns: [],
+    excludeStopwords: false,
+  });
+
+  const handleLoadConfiguration = (loadedConfig: ProcessingConfig) => {
+    setConfig(prev => ({
+      ...loadedConfig,
+      // Preserve column-specific settings that depend on current file
+      selectedColumns: prev.selectedColumns,
+      outputColumns: prev.outputColumns,
+      companyNameColumn: prev.companyNameColumn,
+    }));
+  };
+
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all settings? This will clear all data.')) {
       setFileData(null);
@@ -402,28 +482,10 @@ export default function Home() {
       setDedupeAuditLookup({});
       setSuggestedCompanyColumn('');
       setIsCompanySuggestionAcknowledged(false);
+      setProcessingProgress(null);
+      setShowBatchMode(false);
       handleReferenceFileCleared();
-      setConfig({
-        uppercaseConversion: false,
-        normalizationCleanup: true,
-        addressParsingEnabled: false,
-        addressColumns: [],
-        addressDelimiter: ', ',
-        cityStateValidationEnabled: false,
-        cityColumn: '',
-        stateColumn: '',
-        companyNameCleaningEnabled: true,
-        companyNameColumn: '',
-        removeLegalEntities: true,
-        replaceAbbreviations: true,
-        selectedColumns: [],
-        outputColumns: [],
-        duplicateDetectionColumns: [],
-        columnRenames: {},
-        wordFrequencyEnabled: false,
-        wordFrequencyColumns: [],
-        excludeStopwords: false,
-      });
+      setConfig(getDefaultConfig());
       setViewMode('upload');
     }
   };
@@ -571,7 +633,7 @@ export default function Home() {
               className="relative z-10 flex flex-col items-center justify-center h-full text-center"
             >
               <p className="text-5xl md:text-6xl font-bold text-white tracking-wide drop-shadow-lg mb-4">
-                Welcom!
+                Welcome!
               </p>
               <p className="text-lg md:text-2xl text-white/80 max-w-2xl">
                 EntityMatch Pro is initializing your data wrangling workspace.
@@ -623,54 +685,78 @@ export default function Home() {
             </motion.div>
           </div>
           
-           <div className="mb-3 flex items-center justify-end gap-3 flex-shrink-0">
-             {viewMode === 'results' && (
-               <Button
-                 variant="ghost"
-                 size="sm"
-                 onClick={() => setIsConfigVisibleOnResults(prev => !prev)}
-               >
-                 {isConfigVisibleOnResults ? 'Hide Configuration' : 'Show Configuration'}
-               </Button>
-             )}
-            <div className="flex gap-3">
-              {viewMode === 'setup' && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleReset}
-                    disabled={isProcessing}
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Reset
-                  </Button>
-                  {isProcessing ? (
-                    <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
-                      <XCircle className="w-4 h-4 mr-2" /> Cancel
-                    </Button>
-                  ) : (
+           <div className="mb-3 flex items-center justify-between gap-3 flex-shrink-0">
+             <div className="flex gap-2">
+               {fileData && viewMode === 'setup' && (
+                 <>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => setShowColumnProfiler(true)}
+                   >
+                     <BarChart3 className="w-4 h-4 mr-2" />
+                     Column Profiler
+                   </Button>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => setShowBatchMode(!showBatchMode)}
+                   >
+                     <Files className="w-4 h-4 mr-2" />
+                     {showBatchMode ? 'Single File' : 'Batch Mode'}
+                   </Button>
+                 </>
+               )}
+             </div>
+             <div className="flex items-center gap-3">
+               {viewMode === 'results' && (
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() => setIsConfigVisibleOnResults(prev => !prev)}
+                 >
+                   {isConfigVisibleOnResults ? 'Hide Configuration' : 'Show Configuration'}
+                 </Button>
+               )}
+              <div className="flex gap-3">
+                {viewMode === 'setup' && (
+                  <>
                     <Button
-                      variant="primary"
+                      variant="outline"
                       size="sm"
-                      onClick={handleStartProcessing}
-                      disabled={
-                        !fileData ||
-                        config.selectedColumns.length === 0 ||
-                        isCompanyColumnMissing ||
-                        isReferenceFileMissing
-                      }
+                      onClick={handleReset}
+                      disabled={isProcessing}
                     >
-                      <Sparkles className="w-4 h-4 mr-2" /> Start Processing
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Reset
                     </Button>
-                  )}
-                </>
-              )}
+                    {isProcessing ? (
+                      <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
+                        <XCircle className="w-4 h-4 mr-2" /> Cancel
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleStartProcessing}
+                        disabled={
+                          !fileData ||
+                          config.selectedColumns.length === 0 ||
+                          isCompanyColumnMissing ||
+                          isReferenceFileMissing
+                        }
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" /> Start Processing
+                      </Button>
+                    )}
+                  </>
+                )}
               {viewMode === 'results' && (
                 <Button variant="outline" size="sm" onClick={handleStartNewTask}>
                   <RefreshCw className="w-4 h-4 mr-2" /> New Task
                 </Button>
               )}
+              </div>
             </div>
           </div>
           
@@ -719,6 +805,12 @@ export default function Home() {
                         <LegalEntitiesManager />
                     </div>
                 </AccordionItem>
+                
+                {/* Configuration Manager - Save/Load/Share */}
+                <ConfigurationManager
+                  currentConfig={config}
+                  onLoadConfiguration={handleLoadConfiguration}
+                />
              </div>
              
              {/* Right: Content */}
@@ -737,16 +829,11 @@ export default function Home() {
                     </Alert>
                  )}
                  
-                 {/* Processing State */}
-                 {isProcessing && (
-                     <Alert variant="info">
-                        <div className="flex items-center gap-3">
-                            <Loader2 className="w-5 h-5 animate-spin text-accent-blue" />
-                            <span className="font-medium">Processing data...</span>
-                            <span className="text-sm opacity-80">Standardizing addresses, validating locations, and deduplicating records.</span>
-                        </div>
-                    </Alert>
-                 )}
+                 {/* Animated Processing Progress Bar */}
+                 <ProcessingProgressBar
+                   progress={processingProgress}
+                   isProcessing={isProcessing}
+                 />
                  
                  {/* View Mode: Upload (Empty State) */}
                  {viewMode === 'upload' && (
@@ -776,6 +863,23 @@ export default function Home() {
                             <Alert className="bg-[#09304D] border-[#0051af] text-[#fbab2c]">
                                 Please select the <strong>main Entity/Company Name field</strong> to enable full processing features.
                             </Alert>
+                        )}
+                        
+                        {/* Data Quality Score Card */}
+                        <DataQualityScoreCard
+                          data={fileData.data}
+                          headers={fileData.headers}
+                          config={config}
+                        />
+                        
+                        {/* Batch Mode */}
+                        {showBatchMode && (
+                          <BatchFileUpload
+                            config={config}
+                            onBatchComplete={(results) => {
+                              console.log('Batch processing complete:', results);
+                            }}
+                          />
                         )}
                         
                         <PreviewTable 
@@ -849,6 +953,18 @@ export default function Home() {
              </div>
           </div>
       </main>
+      
+      {/* Column Profiler Modal */}
+      {fileData && (
+        <ColumnProfiler
+          data={fileData.data}
+          headers={fileData.headers}
+          isOpen={showColumnProfiler}
+          onClose={() => setShowColumnProfiler(false)}
+          selectedColumn={selectedProfileColumn}
+          onColumnSelect={setSelectedProfileColumn}
+        />
+      )}
     </div>
   );
 }

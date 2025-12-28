@@ -5,6 +5,14 @@ export function cn(...classes: (string | boolean | undefined | null)[]): string 
   return classes.filter(Boolean).join(' ');
 }
 
+// Pre-compiled patterns for detection
+const DETECTION_PATTERNS = {
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  url: /^(https?:\/\/)|(www\.)|([a-z0-9-]+\.[a-z]{2,})/i,
+  phone: /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/,
+  documentLink: /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar)(\?|$)/i,
+};
+
 // Detect column type based on content
 export function detectColumnType(columnName: string, sampleValues: string[]): ColumnInfo['type'] {
   const lowerName = columnName.toLowerCase();
@@ -14,8 +22,16 @@ export function detectColumnType(columnName: string, sampleValues: string[]): Co
     return 'email';
   }
   
+  if (lowerName.includes('phone') || lowerName.includes('tel') || lowerName.includes('mobile') || lowerName.includes('fax')) {
+    return 'phone';
+  }
+  
   if (lowerName.includes('website') || lowerName.includes('url') || lowerName.includes('site')) {
     return 'website';
+  }
+  
+  if (lowerName.includes('document') || lowerName.includes('attachment') || lowerName.includes('file')) {
+    return 'document_link';
   }
   
   if (lowerName.includes('address') || lowerName.includes('street') || lowerName.includes('addr')) {
@@ -27,15 +43,25 @@ export function detectColumnType(columnName: string, sampleValues: string[]): Co
   if (nonEmptyValues.length === 0) return 'other';
   
   // Email detection
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const emailCount = nonEmptyValues.filter(v => emailPattern.test(v)).length;
+  const emailCount = nonEmptyValues.filter(v => DETECTION_PATTERNS.email.test(v)).length;
   if (emailCount / nonEmptyValues.length > 0.5) {
     return 'email';
   }
   
+  // Phone detection
+  const phoneCount = nonEmptyValues.filter(v => DETECTION_PATTERNS.phone.test(v)).length;
+  if (phoneCount / nonEmptyValues.length > 0.5) {
+    return 'phone';
+  }
+  
+  // Document link detection
+  const docCount = nonEmptyValues.filter(v => DETECTION_PATTERNS.documentLink.test(v)).length;
+  if (docCount / nonEmptyValues.length > 0.3) {
+    return 'document_link';
+  }
+  
   // Website detection
-  const urlPattern = /^(https?:\/\/)|(www\.)|([a-z0-9-]+\.[a-z]{2,})/i;
-  const urlCount = nonEmptyValues.filter(v => urlPattern.test(v)).length;
+  const urlCount = nonEmptyValues.filter(v => DETECTION_PATTERNS.url.test(v)).length;
   if (urlCount / nonEmptyValues.length > 0.5) {
     return 'website';
   }

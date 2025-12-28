@@ -1,4 +1,4 @@
-import { Abbreviation, CumulativeStats } from './types';
+import { Abbreviation, CumulativeStats, SavedConfiguration, ProcessingConfig } from './types';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -6,7 +6,11 @@ const STORAGE_KEYS = {
   LEGAL_ENTITIES: 'entitymatch_legal_entities',
   THEME: 'entitymatch_theme',
   CUMULATIVE_STATS: 'entitymatch_cumulative_stats',
+  SAVED_CONFIGS: 'entitymatch_saved_configs',
+  LAST_CONFIG: 'entitymatch_last_config',
 } as const;
+
+export const SAVED_CONFIGS_EVENT = 'entitymatch-saved-configs-updated';
 
 const DEFAULT_LEGAL_ENTITIES = [
   'LLC', 'L.L.C.', 'L.L.C', 'INC', 'INC.', 'INCORPORATED',
@@ -237,5 +241,141 @@ export const updateCumulativeStats = (delta: Partial<CumulativeStats>): Cumulati
     console.error('Failed to update cumulative stats:', error);
   }
   return updated;
+};
+
+// ============================================
+// CONFIGURATION MANAGEMENT (Team Sharing)
+// ============================================
+
+const notifySavedConfigsUpdated = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SAVED_CONFIGS_EVENT));
+  }
+};
+
+export const loadSavedConfigurations = (): SavedConfiguration[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.SAVED_CONFIGS);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return parsed.map((config: any) => ({
+      ...config,
+      createdAt: new Date(config.createdAt),
+      updatedAt: new Date(config.updatedAt),
+    }));
+  } catch (error) {
+    console.error('Failed to load saved configurations:', error);
+    return [];
+  }
+};
+
+export const saveConfiguration = (
+  name: string,
+  config: ProcessingConfig,
+  description?: string,
+  createdBy?: string
+): SavedConfiguration => {
+  const configs = loadSavedConfigurations();
+  
+  const newConfig: SavedConfiguration = {
+    id: `config_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    name,
+    description,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy,
+    config,
+  };
+  
+  configs.push(newConfig);
+  
+  try {
+    localStorage.setItem(STORAGE_KEYS.SAVED_CONFIGS, JSON.stringify(configs));
+    notifySavedConfigsUpdated();
+  } catch (error) {
+    console.error('Failed to save configuration:', error);
+  }
+  
+  return newConfig;
+};
+
+export const updateSavedConfiguration = (
+  id: string,
+  updates: Partial<Omit<SavedConfiguration, 'id' | 'createdAt'>>
+): void => {
+  const configs = loadSavedConfigurations();
+  const index = configs.findIndex(c => c.id === id);
+  
+  if (index !== -1) {
+    configs[index] = {
+      ...configs[index],
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
+    try {
+      localStorage.setItem(STORAGE_KEYS.SAVED_CONFIGS, JSON.stringify(configs));
+      notifySavedConfigsUpdated();
+    } catch (error) {
+      console.error('Failed to update configuration:', error);
+    }
+  }
+};
+
+export const deleteSavedConfiguration = (id: string): void => {
+  const configs = loadSavedConfigurations();
+  const filtered = configs.filter(c => c.id !== id);
+  
+  try {
+    localStorage.setItem(STORAGE_KEYS.SAVED_CONFIGS, JSON.stringify(filtered));
+    notifySavedConfigsUpdated();
+  } catch (error) {
+    console.error('Failed to delete configuration:', error);
+  }
+};
+
+export const exportConfigurationToJSON = (config: SavedConfiguration): string => {
+  return JSON.stringify(config, null, 2);
+};
+
+export const importConfigurationFromJSON = (json: string): SavedConfiguration | null => {
+  try {
+    const parsed = JSON.parse(json);
+    if (!parsed.name || !parsed.config) {
+      throw new Error('Invalid configuration format');
+    }
+    
+    // Generate new ID and dates for imported config
+    return {
+      ...parsed,
+      id: `config_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      name: `${parsed.name} (Imported)`,
+    };
+  } catch (error) {
+    console.error('Failed to import configuration:', error);
+    return null;
+  }
+};
+
+// Save last used configuration for recurring files
+export const saveLastConfiguration = (config: ProcessingConfig): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_CONFIG, JSON.stringify(config));
+  } catch (error) {
+    console.error('Failed to save last configuration:', error);
+  }
+};
+
+export const loadLastConfiguration = (): ProcessingConfig | null => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.LAST_CONFIG);
+    if (!stored) return null;
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error('Failed to load last configuration:', error);
+    return null;
+  }
 };
 
