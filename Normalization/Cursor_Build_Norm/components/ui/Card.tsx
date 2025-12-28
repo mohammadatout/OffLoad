@@ -3,17 +3,21 @@ import { cn } from '@/lib/utils';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
+  variant?: 'default' | 'obsidian' | 'glow';
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, variant = 'default', ...props }, ref) => {
+    const variants = {
+      default: 'rounded bg-obsidian-card border border-obsidian-border',
+      obsidian: 'rounded bg-obsidian-card border border-obsidian-border hover:border-obsidian-border-hover transition-all',
+      glow: 'rounded bg-obsidian-card border border-obsidian-border hover:border-electric-cyan hover:shadow-electric transition-all',
+    };
+
     return (
       <div
         ref={ref}
-        className={cn(
-          'rounded-lg border border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card shadow-sm',
-          className
-        )}
+        className={cn(variants[variant], className)}
         {...props}
       >
         {children}
@@ -29,7 +33,7 @@ export const CardHeader = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={cn('px-6 py-4 border-b border-light-border dark:border-dark-border', className)}
+        className={cn('px-5 py-4 border-b border-obsidian-border', className)}
         {...props}
       >
         {children}
@@ -45,7 +49,7 @@ export const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttribut
     return (
       <h3
         ref={ref}
-        className={cn('text-xl font-semibold text-gray-900 dark:text-gray-100', className)}
+        className={cn('text-base font-medium text-white', className)}
         {...props}
       >
         {children}
@@ -61,7 +65,7 @@ export const CardContent = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={cn('px-6 py-4', className)}
+        className={cn('px-5 py-4', className)}
         {...props}
       >
         {children}
@@ -77,7 +81,7 @@ export const CardFooter = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={cn('px-6 py-4 border-t border-light-border dark:border-dark-border', className)}
+        className={cn('px-5 py-4 border-t border-obsidian-border', className)}
         {...props}
       >
         {children}
@@ -87,4 +91,3 @@ export const CardFooter = React.forwardRef<HTMLDivElement, CardProps>(
 );
 
 CardFooter.displayName = 'CardFooter';
-
