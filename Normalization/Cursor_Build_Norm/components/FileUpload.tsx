@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
-import { Upload, FileSpreadsheet, X, CheckCircle, Loader2, Zap } from 'lucide-react';
+import { Upload, FileSpreadsheet, X, CheckCircle, Loader2, Zap, Files, File } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Papa from 'papaparse';
 import { CSVRow, FileData } from '@/lib/types';
@@ -11,17 +11,33 @@ import { analyzeCSVData } from '@/lib/utils';
 
 interface FileUploadProps {
   onFileUploaded: (fileData: FileData) => void;
+  showBatchMode?: boolean;
+  onBatchModeChange?: (isBatch: boolean) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
-  onFileUploaded
+  onFileUploaded,
+  showBatchMode = false,
+  onBatchModeChange,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [error, setError] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isBatchMode, setIsBatchMode] = useState(showBatchMode);
   
   const mainFileInputRef = useRef<HTMLInputElement>(null);
+  const batchFileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleBatchToggle = (batch: boolean) => {
+    setIsBatchMode(batch);
+    onBatchModeChange?.(batch);
+    // Clear files when switching modes
+    setUploadedFile(null);
+    setUploadedFiles([]);
+    setError('');
+  };
   
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -45,8 +61,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     e.stopPropagation();
     setIsDragging(false);
     
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
+    const files = Array.from(e.dataTransfer.files);
+    if (isBatchMode) {
+      handleBatchFileSelection(files);
+    } else if (files.length > 0) {
       handleFileSelection(files[0]);
     }
   };
@@ -99,34 +117,87 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     });
   };
   
+  const handleBatchFileSelection = (files: File[]) => {
+    setError('');
+    const csvFiles = files.filter(f => f.name.endsWith('.csv'));
+    
+    if (csvFiles.length === 0) {
+      setError('Please upload CSV files only.');
+      return;
+    }
+    
+    setUploadedFiles(csvFiles);
+    
+    // Process first file to load into the app
+    if (csvFiles.length > 0) {
+      handleFileSelection(csvFiles[0]);
+    }
+  };
+  
   const handleMainFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFileSelection(e.target.files[0]);
+      if (isBatchMode) {
+        handleBatchFileSelection(Array.from(e.target.files));
+      } else {
+        handleFileSelection(e.target.files[0]);
+      }
     }
   };
   
   const clearMainFile = () => {
     setUploadedFile(null);
+    setUploadedFiles([]);
     setError('');
     if (mainFileInputRef.current) {
       mainFileInputRef.current.value = '';
+    }
+    if (batchFileInputRef.current) {
+      batchFileInputRef.current.value = '';
     }
   };
   
   return (
     <Card variant="obsidian" className="overflow-hidden">
       <CardContent className="p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded flex items-center justify-center bg-electric-cyan/10">
-            <Upload className="w-5 h-5 text-electric-cyan" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded flex items-center justify-center bg-electric-cyan/10">
+              <Upload className="w-5 h-5 text-electric-cyan" />
+            </div>
+            <div>
+              <h3 className="text-base font-medium text-white">
+                Upload CSV {isBatchMode ? 'Files' : 'File'}
+              </h3>
+              <p className="text-xs text-gray-500">
+                Drag & drop or click to browse
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-medium text-white">
-              Upload CSV File
-            </h3>
-            <p className="text-xs text-gray-500">
-              Drag & drop or click to browse
-            </p>
+          
+          {/* Mode Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-obsidian-layer1 border border-obsidian-border rounded">
+            <button
+              onClick={() => handleBatchToggle(false)}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1.5 ${
+                !isBatchMode
+                  ? 'bg-electric-cyan text-obsidian-base'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <File className="w-3 h-3" />
+              Single
+            </button>
+            <button
+              onClick={() => handleBatchToggle(true)}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1.5 ${
+                isBatchMode
+                  ? 'bg-electric-purple text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Files className="w-3 h-3" />
+              Batch
+            </button>
           </div>
         </div>
         
@@ -178,14 +249,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 transition={{ duration: 1, repeat: isDragging ? Infinity : 0 }}
                 className="w-16 h-16 mx-auto mb-4 rounded-lg bg-obsidian-hover border border-obsidian-border flex items-center justify-center"
               >
-                <FileSpreadsheet className="w-8 h-8 text-gray-500" />
+                {isBatchMode ? (
+                  <Files className="w-8 h-8 text-electric-purple" />
+                ) : (
+                  <FileSpreadsheet className="w-8 h-8 text-gray-500" />
+                )}
               </motion.div>
               
               <p className="text-sm font-medium text-gray-300 mb-1">
-                {isDragging ? 'Drop your CSV file here' : 'Drop CSV file here or click to browse'}
+                {isDragging 
+                  ? `Drop your CSV file${isBatchMode ? 's' : ''} here` 
+                  : `Drop CSV file${isBatchMode ? 's' : ''} here or click to browse`
+                }
               </p>
               <p className="text-xs text-gray-600 mb-5">
-                Supports files up to 100MB
+                {isBatchMode 
+                  ? 'Select multiple files for batch processing'
+                  : 'Supports files up to 100MB'
+                }
               </p>
               
               <button
@@ -193,10 +274,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   e.stopPropagation();
                   mainFileInputRef.current?.click();
                 }}
-                className="px-5 py-2 text-sm font-medium text-obsidian-base bg-electric-cyan rounded hover:bg-electric-cyan-dark transition-all inline-flex items-center gap-2 electric-hover"
+                className={`px-5 py-2 text-sm font-medium rounded transition-all inline-flex items-center gap-2 electric-hover ${
+                  isBatchMode
+                    ? 'text-white bg-electric-purple hover:bg-electric-purple/80'
+                    : 'text-obsidian-base bg-electric-cyan hover:bg-electric-cyan-dark'
+                }`}
               >
                 <Zap className="w-4 h-4" />
-                Select File
+                Select File{isBatchMode ? 's' : ''}
               </button>
             </div>
             
@@ -204,6 +289,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               ref={mainFileInputRef}
               type="file"
               accept=".csv"
+              multiple={isBatchMode}
               onChange={handleMainFileInputChange}
               className="hidden"
             />
@@ -217,14 +303,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded flex items-center justify-center bg-neon-green/10">
-                  <FileSpreadsheet className="w-5 h-5 text-neon-green" />
+                  {isBatchMode && uploadedFiles.length > 1 ? (
+                    <Files className="w-5 h-5 text-neon-green" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-neon-green" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {uploadedFile.name}
+                    {isBatchMode && uploadedFiles.length > 1 
+                      ? `${uploadedFiles.length} files selected`
+                      : uploadedFile.name
+                    }
                   </p>
                   <p className="text-xs text-gray-500 font-mono">
-                    {(uploadedFile.size / 1024).toFixed(2)} KB
+                    {isBatchMode && uploadedFiles.length > 1
+                      ? `Total: ${(uploadedFiles.reduce((acc, f) => acc + f.size, 0) / 1024).toFixed(2)} KB`
+                      : `${(uploadedFile.size / 1024).toFixed(2)} KB`
+                    }
                   </p>
                 </div>
                 {!isProcessing && (
@@ -250,6 +346,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <div className="flex items-center gap-2 mt-3 text-xs text-gray-400">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Processing file...
+              </div>
+            )}
+            
+            {/* Batch file list */}
+            {isBatchMode && uploadedFiles.length > 1 && (
+              <div className="mt-3 pt-3 border-t border-obsidian-border">
+                <p className="text-xs text-gray-500 mb-2">Files in batch:</p>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                  {uploadedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs text-gray-400">
+                      <File className="w-3 h-3" />
+                      <span className="truncate">{file.name}</span>
+                      <span className="text-gray-600 font-mono">
+                        ({(file.size / 1024).toFixed(1)} KB)
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>

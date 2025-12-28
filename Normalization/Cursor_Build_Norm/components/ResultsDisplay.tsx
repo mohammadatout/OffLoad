@@ -197,35 +197,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                   </div>
                 )}
                 
-                <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 col-span-2 md:col-span-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
-                      Cumulative Totals
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Rows Processed</p>
-                      <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        {cumulativeStats.rowsProcessed.toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Companies Cleaned</p>
-                      <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        {cumulativeStats.companiesCleaned.toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase text-slate-500 dark:text-slate-400">Duplicates Removed</p>
-                      <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        {cumulativeStats.duplicatesRemoved.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
                 </div>
-              </div>
               
               <div className="space-y-4">
                 <RemovalImpactChart stats={stats} />

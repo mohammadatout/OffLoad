@@ -209,27 +209,47 @@ export function extractHyperlink(value: string): { text: string; url: string; do
   return null;
 }
 
-// Extract domain from URL
+// Extract domain from URL - strips protocol, www, path, query params
+// Input: https://www.example.com/page/subpage?id=123
+// Output: example.com
 export function extractDomainFromUrl(url: string): string {
+  if (!url || typeof url !== 'string') return '';
+  
   try {
     let cleanUrl = url.trim();
     
-    // Add protocol if missing
+    // Add protocol if missing for URL parsing
     if (!cleanUrl.match(/^https?:\/\//i)) {
       cleanUrl = 'http://' + cleanUrl;
     }
     
     const urlObj = new URL(cleanUrl);
-    return urlObj.hostname.replace(/^www\./i, '');
+    // Remove www. prefix and return just the domain
+    return urlObj.hostname.replace(/^www\./i, '').toLowerCase();
   } catch (e) {
     // If URL parsing fails, try simple extraction
-    let domain = url.replace(/^https?:\/\//i, '');
+    let domain = url.trim();
+    // Remove protocol
+    domain = domain.replace(/^https?:\/\//i, '');
+    // Remove www.
     domain = domain.replace(/^www\./i, '');
+    // Remove path, query params, and hash
     domain = domain.split('/')[0];
     domain = domain.split('?')[0];
     domain = domain.split('#')[0];
-    return domain;
+    return domain.toLowerCase();
   }
+}
+
+// Clean punctuation from a string (for dictionary entries)
+export function cleanPunctuation(text: string): string {
+  if (!text) return '';
+  // Remove all punctuation except hyphens and apostrophes within words
+  return text
+    .replace(/[^\w\s'-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
 }
 
 // Detect reference file columns with flexible matching

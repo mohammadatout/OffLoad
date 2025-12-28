@@ -28,8 +28,6 @@ import {
   Loader2, 
   XCircle, 
   BookOpen, 
-  BarChart3, 
-  Files,
   Zap,
   Layers,
   Settings2,
@@ -149,6 +147,27 @@ export default function Home() {
   const [showColumnProfiler, setShowColumnProfiler] = useState(false);
   const [selectedProfileColumn, setSelectedProfileColumn] = useState<string>('');
   const [showBatchMode, setShowBatchMode] = useState(false);
+  const [excludedColumns, setExcludedColumns] = useState<string[]>([]);
+  
+  // Toggle column exclusion
+  const handleColumnExcludeToggle = (column: string) => {
+    setExcludedColumns(prev => 
+      prev.includes(column) 
+        ? prev.filter(c => c !== column)
+        : [...prev, column]
+    );
+  };
+
+  // Handle column rename from PreviewTable
+  const handleColumnRename = (originalName: string, newName: string) => {
+    setConfig(prev => ({
+      ...prev,
+      columnRenames: {
+        ...prev.columnRenames,
+        [originalName]: newName
+      }
+    }));
+  };
 
   const parsedFieldName = useMemo(
     () => getParsedFieldName(config.addressColumns),
@@ -525,9 +544,11 @@ export default function Home() {
     const cleanedFilename = `${filename}_Cleaned_${timestamp}.csv`;
     const comparisonFilename = `${filename}_Original_vs_Cleaned_${timestamp}.csv`;
     
-    const cleanColumnsToExport = config.outputColumns.length > 0 
+    // Get columns to export, filtering out excluded columns
+    const baseColumns = config.outputColumns.length > 0 
       ? config.outputColumns 
       : (fileData?.headers || []);
+    const cleanColumnsToExport = baseColumns.filter(col => !excludedColumns.includes(col));
     
     const triggerDownload = (csvContent: string, downloadName: string) => {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -714,25 +735,6 @@ export default function Home() {
             
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
-              {fileData && viewMode === 'setup' && (
-                <>
-                  <button
-                    onClick={() => setShowColumnProfiler(true)}
-                    className="px-3 py-2 text-xs font-medium text-gray-300 bg-obsidian-card border border-obsidian-border rounded hover:border-electric-cyan hover:text-electric-cyan transition-all flex items-center gap-2"
-                  >
-                    <BarChart3 className="w-3.5 h-3.5" />
-                    Columns
-                  </button>
-                  <button
-                    onClick={() => setShowBatchMode(!showBatchMode)}
-                    className="px-3 py-2 text-xs font-medium text-gray-300 bg-obsidian-card border border-obsidian-border rounded hover:border-electric-cyan hover:text-electric-cyan transition-all flex items-center gap-2"
-                  >
-                    <Files className="w-3.5 h-3.5" />
-                    {showBatchMode ? 'Single' : 'Batch'}
-                  </button>
-                </>
-              )}
-              
               {viewMode === 'setup' && (
                 <>
                   <button
@@ -870,7 +872,11 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-5"
                 >
-                  <FileUpload onFileUploaded={handleFileUploaded} />
+                  <FileUpload 
+                    onFileUploaded={handleFileUploaded}
+                    showBatchMode={showBatchMode}
+                    onBatchModeChange={setShowBatchMode}
+                  />
                 </motion.div>
               )}
               
@@ -892,7 +898,7 @@ export default function Home() {
                   {isCompanyColumnMissing && (
                     <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded text-amber-400 text-sm flex items-center gap-3">
                       <Settings2 className="w-5 h-5 flex-shrink-0" />
-                      Please select the <strong className="mx-1">main Entity/Company Name field</strong> to enable full processing.
+                      Please select the <strong className="mx-1">Main Entity/Company Name Field</strong> to enable full processing.
                     </div>
                   )}
                   
@@ -925,6 +931,10 @@ export default function Home() {
                         ? () => handleCompanyFieldSelection(suggestedCompanyColumn)
                         : undefined
                     }
+                    columnRenames={config.columnRenames}
+                    onColumnRename={handleColumnRename}
+                    excludedColumns={excludedColumns}
+                    onColumnExcludeToggle={handleColumnExcludeToggle}
                   />
                   
                   <StatsPanel
@@ -942,6 +952,8 @@ export default function Home() {
                       onExcludeStopwordsChange: (exclude) => handleConfigChange({ excludeStopwords: exclude }),
                       onAddToExclusion: handleAddWordToExclusion
                     }}
+                    onColumnProfilerOpen={() => setShowColumnProfiler(true)}
+                    onColumnSelect={setSelectedProfileColumn}
                   />
 
                   {/* Bottom Action Bar */}
