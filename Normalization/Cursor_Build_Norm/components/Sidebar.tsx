@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Switch } from './ui/Switch';
-import { FileSpreadsheet, FileText, Mail, Globe, MapPin, Sparkles, XCircle, Zap, Clock, Activity } from 'lucide-react';
+import { FileSpreadsheet, FileText, Mail, Globe, MapPin, Sparkles, XCircle, Zap, Clock, Activity, Phone } from 'lucide-react';
 import { ColumnInfo, CumulativeStats } from '@/lib/types';
 
 interface SidebarProps {
@@ -30,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const emailColumns = columnInfo.filter(col => col.type === 'email').length;
   const websiteColumns = columnInfo.filter(col => col.type === 'website').length;
   const addressColumns = columnInfo.filter(col => col.type === 'address').length;
+  const phoneColumns = columnInfo.filter(col => col.type === 'phone').length;
   const wowHighlights = [
     {
       id: 'automation',
@@ -215,6 +216,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30">
                 <MapPin className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Phone Columns</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {phoneColumns}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <Phone className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </CardContent>

@@ -14,7 +14,10 @@ import {
   Files, 
   CheckCircle, 
   XCircle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Phone,
+  Globe,
+  Link,
 } from 'lucide-react';
 import { ProcessingConfig } from '@/lib/types';
 
@@ -43,6 +46,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     cleaning: true,
     parsing: false,
+    dataTypes: false,
     validation: false,
     mapping: false,
     dedupe: false,
@@ -326,6 +330,191 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 </div>
             )}
             
+        </div>
+      </AccordionItem>
+
+      {/* 2.5 Phone, Website & Document Processing */}
+      <AccordionItem
+        title="Phone, Website & Links"
+        icon={<Phone className="w-5 h-5 text-purple-500" />}
+        isOpen={openSections.dataTypes}
+        onToggle={() => toggleSection('dataTypes')}
+      >
+        <div className="space-y-6">
+          {/* Phone Normalization */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Phone Number Normalization
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Standardize phone numbers to a consistent format
+                </p>
+              </div>
+              <Switch
+                checked={config.phoneNormalizationEnabled}
+                onCheckedChange={(checked) => onConfigChange({ phoneNormalizationEnabled: checked })}
+              />
+            </div>
+            
+            {config.phoneNormalizationEnabled && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Format
+                  </label>
+                  <Select
+                    value={config.phoneFormat}
+                    onChange={(e) => onConfigChange({ phoneFormat: e.target.value as any })}
+                    options={[
+                      { value: 'NATIONAL', label: '(202) 555-1234' },
+                      { value: 'E164', label: '+12025551234' },
+                      { value: 'INTERNATIONAL', label: '+1 (202) 555-1234' },
+                      { value: 'DOTS', label: '202.555.1234' },
+                      { value: 'DASHES', label: '202-555-1234' },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Columns
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {availableColumns.map((col) => (
+                      <div
+                        key={`phone-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.phoneColumns?.includes(col)
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.phoneColumns || [], 'phoneColumns')}
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span className="truncate">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+          
+          {/* Website Normalization */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Website/URL Normalization
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Clean URLs and extract domains
+                </p>
+              </div>
+              <Switch
+                checked={config.websiteNormalizationEnabled}
+                onCheckedChange={(checked) => onConfigChange({ websiteNormalizationEnabled: checked })}
+              />
+            </div>
+            
+            {config.websiteNormalizationEnabled && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Extract Domain
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Create a separate column with just the domain name
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.extractDomain}
+                    onCheckedChange={(checked) => onConfigChange({ extractDomain: checked })}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Website Columns
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {availableColumns.map((col) => (
+                      <div
+                        key={`web-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.websiteColumns?.includes(col)
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.websiteColumns || [], 'websiteColumns')}
+                      >
+                        <Globe className="w-3 h-3" />
+                        <span className="truncate">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+          
+          {/* Document Link Processing */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Document Link Processing
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Extract file names and types from document URLs
+                </p>
+              </div>
+              <Switch
+                checked={config.extractDocumentInfo}
+                onCheckedChange={(checked) => onConfigChange({ extractDocumentInfo: checked })}
+              />
+            </div>
+            
+            {config.extractDocumentInfo && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Document Link Columns
+                  </p>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Supports: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, ZIP, RAR
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {availableColumns.map((col) => (
+                      <div
+                        key={`doc-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.documentLinkColumns?.includes(col)
+                            ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.documentLinkColumns || [], 'documentLinkColumns')}
+                      >
+                        <Link className="w-3 h-3" />
+                        <span className="truncate">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </AccordionItem>
 
