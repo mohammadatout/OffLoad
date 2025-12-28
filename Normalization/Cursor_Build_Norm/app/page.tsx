@@ -17,11 +17,25 @@ import { ProcessingProgressBar } from '@/components/ProcessingProgressBar';
 import { DataQualityScoreCard } from '@/components/DataQualityScoreCard';
 import { ConfigurationManager } from '@/components/ConfigurationManager';
 import { BatchFileUpload } from '@/components/BatchFileUpload';
+import { ToolHighlights } from '@/components/ToolHighlights';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { AccordionItem } from '@/components/ui/Accordion';
-import { RefreshCw, Sparkles, Download, Loader2, XCircle, BookOpen, BarChart3, Files } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { 
+  RefreshCw, 
+  Sparkles, 
+  Download, 
+  Loader2, 
+  XCircle, 
+  BookOpen, 
+  BarChart3, 
+  Files,
+  Zap,
+  Layers,
+  Settings2,
+  ChevronDown
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { 
   FileData, 
@@ -65,7 +79,7 @@ const deriveDefaultSelectedColumns = (headers: string[]): string[] => {
 };
 
 export default function Home() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode for Obsidian
   const [viewMode, setViewMode] = useState<ViewMode>('upload');
   const [showSplash, setShowSplash] = useState(true);
   const [suggestedCompanyColumn, setSuggestedCompanyColumn] = useState('');
@@ -109,18 +123,14 @@ export default function Home() {
     companyNameColumn: '',
     removeLegalEntities: true,
     replaceAbbreviations: true,
-    // Phone processing
     phoneNormalizationEnabled: false,
     phoneColumns: [],
     phoneFormat: 'NATIONAL',
-    // Website processing
     websiteNormalizationEnabled: false,
     websiteColumns: [],
     extractDomain: true,
-    // Document link processing
     documentLinkColumns: [],
     extractDocumentInfo: false,
-    // Columns
     selectedColumns: [],
     outputColumns: [],
     duplicateDetectionColumns: [],
@@ -162,7 +172,6 @@ export default function Home() {
     return base;
   }, [fileData?.headers, config.addressParsingEnabled, config.addressColumns, parsedFieldName, config.cityStateValidationEnabled, config.cityColumn, config.stateColumn]);
   
-  // Apply theme changes
   useEffect(() => {
     if (!config.companyNameColumn) return;
     setConfig(prev => {
@@ -198,6 +207,8 @@ export default function Home() {
     const savedTheme = loadTheme();
     if (savedTheme) {
       setIsDarkMode(savedTheme === 'dark');
+    } else {
+      setIsDarkMode(true); // Default to dark for Obsidian
     }
     
     setExclusionList(loadLegalEntities());
@@ -371,10 +382,8 @@ export default function Home() {
     setProcessingProgress(null);
     abortControllerRef.current = new AbortController();
     
-    // Save configuration for recurring files
     saveLastConfiguration(config);
     
-    // Use requestAnimationFrame for smoother UI updates
     requestAnimationFrame(() => {
       setTimeout(() => {
         try {
@@ -461,7 +470,6 @@ export default function Home() {
   const handleLoadConfiguration = (loadedConfig: ProcessingConfig) => {
     setConfig(prev => ({
       ...loadedConfig,
-      // Preserve column-specific settings that depend on current file
       selectedColumns: prev.selectedColumns,
       outputColumns: prev.outputColumns,
       companyNameColumn: prev.companyNameColumn,
@@ -497,7 +505,7 @@ export default function Home() {
     setProcessingError('');
     setCustomFilename('cleaned_data');
     setViewMode('upload');
-    setFileData(null); // Also clear file data to force new upload
+    setFileData(null);
     setSuggestedCompanyColumn('');
     setIsCompanySuggestionAcknowledged(false);
     setDedupeAuditLookup({});
@@ -539,7 +547,7 @@ export default function Home() {
         cleanedFilename,
         cleanColumnsToExport,
         config.columnRenames,
-        true // Exclude verification columns for Cleaned file
+        true
       );
       triggerDownload(csvContent, cleanedFilename);
     }
@@ -547,8 +555,8 @@ export default function Home() {
     if (comparison) {
       const comparisonRows = buildOriginalVsCleanedRows(
         fileData.data,
-        cleanedData, // Use cleanedData (Normalized but NOT Deduped/Merged)
-        undefined, // Include ALL columns (original + cleaned)
+        cleanedData,
+        undefined,
         dedupeAuditLookup
       );
       
@@ -556,9 +564,9 @@ export default function Home() {
         const comparisonCsv = exportToCSV(
             comparisonRows, 
             comparisonFilename, 
-            undefined, // export all comparison columns
+            undefined,
             undefined, 
-            false // Include verification columns
+            false
         );
         triggerDownload(comparisonCsv, comparisonFilename);
       }
@@ -609,14 +617,15 @@ export default function Home() {
     }
   }, [viewMode]);
 
+  // Splash Screen - Obsidian Style
   if (showSplash) {
     return (
-      <div className="flex min-h-screen bg-dark-bg">
+      <div className="flex min-h-screen bg-obsidian-base">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-dark-bg/90"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-base"
         >
           <div className="relative w-full h-full">
             <Image
@@ -624,20 +633,46 @@ export default function Home() {
               alt="Cisco Data Network"
               fill
               priority
-              className="object-cover opacity-50"
+              unoptimized
+              className="object-cover opacity-40"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-obsidian-base via-obsidian-base/50 to-transparent" />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.7 }}
               className="relative z-10 flex flex-col items-center justify-center h-full text-center"
             >
-              <p className="text-5xl md:text-6xl font-bold text-white tracking-wide drop-shadow-lg mb-4">
+              <motion.div
+                animate={{ 
+                  boxShadow: ['0 0 20px rgba(0, 229, 255, 0.3)', '0 0 60px rgba(0, 229, 255, 0.6)', '0 0 20px rgba(0, 229, 255, 0.3)']
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-electric-cyan to-electric-purple flex items-center justify-center mb-6"
+              >
+                <Zap className="w-10 h-10 text-white" />
+              </motion.div>
+              <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-4 neon-text">
                 Welcome!
-              </p>
-              <p className="text-lg md:text-2xl text-white/80 max-w-2xl">
+              </h1>
+              <p className="text-lg md:text-xl text-gray-400 max-w-xl">
                 EntityMatch Pro is initializing your data wrangling workspace.
               </p>
+              <motion.div
+                className="mt-8 flex gap-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-electric-cyan"
+                    animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                  />
+                ))}
+              </motion.div>
             </motion.div>
           </div>
         </motion.div>
@@ -646,7 +681,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen bg-light-bg dark:bg-dark-bg">
+    <div className="flex min-h-screen bg-obsidian-base">
       <Sidebar
         totalRecords={fileData?.data.length || 0}
         totalColumns={fileData?.headers.length || 0}
@@ -657,301 +692,296 @@ export default function Home() {
         onNavigate={handleNavigate}
       />
       
-      <main className="flex-1 p-4 flex flex-col overflow-hidden min-h-screen">
-          {/* Header */}
-          <div className="mb-4">
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="relative h-48 md:h-56 rounded-2xl overflow-hidden shadow-lg"
-            >
-              <Image
-                src="/images/Animated GIF.gif"
-                alt="Cisco Data Linking Banner"
-                fill
-                priority
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-dark-bg/90 via-dark-bg/40 to-transparent"></div>
-              <div className="relative z-10 h-full px-6 py-6 flex items-center justify-between">
-                <div className="text-white">
-                  <p className="uppercase text-xs tracking-[0.35em] text-cisco-green mb-2">EntityMatch Pro</p>
-                  <h1 className="text-3xl md:text-4xl font-bold">Data Wrangling Studio</h1>
-                  <p className="text-sm md:text-base text-white/80">
-                    Cleaning, standardizing, and deduplicating entity data at speed.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-          
-           <div className="mb-3 flex items-center justify-between gap-3 flex-shrink-0">
-             <div className="flex gap-2">
-               {fileData && viewMode === 'setup' && (
-                 <>
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => setShowColumnProfiler(true)}
-                   >
-                     <BarChart3 className="w-4 h-4 mr-2" />
-                     Column Profiler
-                   </Button>
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => setShowBatchMode(!showBatchMode)}
-                   >
-                     <Files className="w-4 h-4 mr-2" />
-                     {showBatchMode ? 'Single File' : 'Batch Mode'}
-                   </Button>
-                 </>
-               )}
-             </div>
-             <div className="flex items-center gap-3">
-               {viewMode === 'results' && (
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={() => setIsConfigVisibleOnResults(prev => !prev)}
-                 >
-                   {isConfigVisibleOnResults ? 'Hide Configuration' : 'Show Configuration'}
-                 </Button>
-               )}
-              <div className="flex gap-3">
-                {viewMode === 'setup' && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleReset}
-                      disabled={isProcessing}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Reset
-                    </Button>
-                    {isProcessing ? (
-                      <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
-                        <XCircle className="w-4 h-4 mr-2" /> Cancel
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={handleStartProcessing}
-                        disabled={
-                          !fileData ||
-                          config.selectedColumns.length === 0 ||
-                          isCompanyColumnMissing ||
-                          isReferenceFileMissing
-                        }
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" /> Start Processing
-                      </Button>
-                    )}
-                  </>
-                )}
-              {viewMode === 'results' && (
-                <Button variant="outline" size="sm" onClick={handleStartNewTask}>
-                  <RefreshCw className="w-4 h-4 mr-2" /> New Task
-                </Button>
+      <main className="flex-1 flex flex-col overflow-hidden min-h-screen">
+        {/* Header Banner with GIF */}
+        <div className="relative h-32 flex-shrink-0">
+          <Image
+            src="/images/Animated GIF.gif"
+            alt="Cisco Data Linking Banner"
+            fill
+            priority
+            unoptimized
+            className="object-cover"
+          />
+          <div className="absolute inset-0 banner-gradient" />
+          <div className="relative z-10 h-full px-6 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-electric-cyan mb-1 font-medium">
+                EntityMatch Pro
+              </p>
+              <h1 className="text-2xl font-bold text-white">Data Wrangling Studio</h1>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              {fileData && viewMode === 'setup' && (
+                <>
+                  <button
+                    onClick={() => setShowColumnProfiler(true)}
+                    className="px-3 py-2 text-xs font-medium text-gray-300 bg-obsidian-card border border-obsidian-border rounded hover:border-electric-cyan hover:text-electric-cyan transition-all flex items-center gap-2"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    Columns
+                  </button>
+                  <button
+                    onClick={() => setShowBatchMode(!showBatchMode)}
+                    className="px-3 py-2 text-xs font-medium text-gray-300 bg-obsidian-card border border-obsidian-border rounded hover:border-electric-cyan hover:text-electric-cyan transition-all flex items-center gap-2"
+                  >
+                    <Files className="w-3.5 h-3.5" />
+                    {showBatchMode ? 'Single' : 'Batch'}
+                  </button>
+                </>
               )}
-              </div>
+              
+              {viewMode === 'setup' && (
+                <>
+                  <button
+                    onClick={handleReset}
+                    disabled={isProcessing}
+                    className="px-3 py-2 text-xs font-medium text-gray-400 border border-obsidian-border rounded hover:border-gray-500 hover:text-gray-300 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Reset
+                  </button>
+                  
+                  {isProcessing ? (
+                    <button
+                      onClick={handleCancelProcessing}
+                      className="px-4 py-2 text-xs font-medium text-white bg-neon-red rounded hover:bg-red-600 transition-all flex items-center gap-2"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      Cancel
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStartProcessing}
+                      disabled={!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing || isReferenceFileMissing}
+                      className="px-4 py-2 text-xs font-bold text-obsidian-base bg-electric-cyan rounded hover:bg-electric-cyan-dark transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed electric-hover"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      Process
+                    </button>
+                  )}
+                </>
+              )}
+              
+              {viewMode === 'results' && (
+                <button
+                  onClick={handleStartNewTask}
+                  className="px-4 py-2 text-xs font-medium text-gray-300 border border-obsidian-border rounded hover:border-electric-cyan hover:text-electric-cyan transition-all flex items-center gap-2"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  New Task
+                </button>
+              )}
             </div>
           </div>
-          
-          {/* Main Grid */}
-           <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden">
-             {/* Left: Configuration */}
-              <div
-                className={clsx(
-                  'col-span-12 overflow-y-auto pr-2 space-y-4 transition-all duration-200',
-                  {
-                    'lg:col-span-4': isConfigVisibleOnResults || viewMode !== 'results',
-                    'hidden lg:hidden': viewMode === 'results' && !isConfigVisibleOnResults,
-                  }
-                )}
-              >
-                <ConfigurationPanel
-                  config={config}
-                  onConfigChange={handleConfigChange}
-                  availableColumns={derivedColumns}
-                  renames={config.columnRenames}
-                  onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
-                  referenceUploadSlot={
-                    config.cityStateValidationEnabled ? (
-                      <ReferenceFileUpload
-                        onReferenceFileUploaded={handleReferenceFileUploaded}
-                        onReferenceFileCleared={handleReferenceFileCleared}
-                        existingFileInfo={referenceFileInfo}
-                        existingMapping={referenceMapping}
-                        isRequired={config.cityStateValidationEnabled}
-                      />
-                    ) : null
-                  }
-                  referenceUploadMissing={isReferenceFileMissing}
-                  showReferenceUploader={config.cityStateValidationEnabled}
-                />
-                
-                {/* Dictionaries Accordion */}
-                <AccordionItem 
+        </div>
+
+        {/* Tool Highlights - Show on upload view */}
+        {viewMode === 'upload' && (
+          <div className="px-6 py-4 flex-shrink-0">
+            <ToolHighlights variant="horizontal" />
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-hidden p-6">
+          <div className="grid grid-cols-12 gap-5 h-full">
+            {/* Left: Configuration Panel */}
+            <div
+              className={clsx(
+                'overflow-y-auto space-y-4 pr-2',
+                {
+                  'col-span-12 lg:col-span-4': isConfigVisibleOnResults || viewMode !== 'results',
+                  'hidden': viewMode === 'results' && !isConfigVisibleOnResults,
+                }
+              )}
+            >
+              {viewMode !== 'upload' && (
+                <>
+                  <ConfigurationPanel
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    availableColumns={derivedColumns}
+                    renames={config.columnRenames}
+                    onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
+                    referenceUploadSlot={
+                      config.cityStateValidationEnabled ? (
+                        <ReferenceFileUpload
+                          onReferenceFileUploaded={handleReferenceFileUploaded}
+                          onReferenceFileCleared={handleReferenceFileCleared}
+                          existingFileInfo={referenceFileInfo}
+                          existingMapping={referenceMapping}
+                          isRequired={config.cityStateValidationEnabled}
+                        />
+                      ) : null
+                    }
+                    referenceUploadMissing={isReferenceFileMissing}
+                    showReferenceUploader={config.cityStateValidationEnabled}
+                  />
+                  
+                  <AccordionItem 
                     title="Dictionaries & Lists" 
-                    icon={<BookOpen className="w-5 h-5 text-indigo-500" />}
+                    icon={<BookOpen className="w-4 h-4 text-electric-purple" />}
                     isOpen={dictionariesOpen}
                     onToggle={() => setDictionariesOpen(!dictionariesOpen)}
-                >
-                    <div className="space-y-6 pt-2">
-                        <AbbreviationManager />
-                        <LegalEntitiesManager />
+                  >
+                    <div className="space-y-4 pt-2">
+                      <AbbreviationManager />
+                      <LegalEntitiesManager />
                     </div>
-                </AccordionItem>
-                
-                {/* Configuration Manager - Save/Load/Share */}
-                <ConfigurationManager
-                  currentConfig={config}
-                  onLoadConfiguration={handleLoadConfiguration}
+                  </AccordionItem>
+                  
+                  <ConfigurationManager
+                    currentConfig={config}
+                    onLoadConfiguration={handleLoadConfiguration}
+                  />
+                </>
+              )}
+            </div>
+            
+            {/* Right: Content */}
+            <div
+              className={clsx(
+                'overflow-y-auto space-y-5',
+                isConfigVisibleOnResults || viewMode !== 'results'
+                  ? 'col-span-12 lg:col-span-8'
+                  : 'col-span-12'
+              )}
+            >
+              {/* Processing Error */}
+              {processingError && (
+                <div className="p-4 bg-neon-red/10 border border-neon-red/30 rounded text-neon-red text-sm">
+                  {processingError}
+                </div>
+              )}
+              
+              {/* Processing Progress Bar - Aurora Style */}
+              <ProcessingProgressBar
+                progress={processingProgress}
+                isProcessing={isProcessing}
+              />
+              
+              {/* View Mode: Upload */}
+              {viewMode === 'upload' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-5"
+                >
+                  <FileUpload onFileUploaded={handleFileUploaded} />
+                </motion.div>
+              )}
+              
+              {/* Export Panel */}
+              {processedData.length > 0 && (
+                <ExportPanel
+                  customFilename={customFilename}
+                  onFilenameChange={setCustomFilename}
+                  onExportClean={() => handleExport({ enhanced: true, comparison: false })}
+                  onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
+                  isProcessing={isProcessing}
+                  hasResults={processedData.length > 0}
                 />
-             </div>
-             
-             {/* Right: Content */}
-              <div
-                className={clsx(
-                  'col-span-12 overflow-y-auto space-y-6',
-                  isConfigVisibleOnResults || viewMode !== 'results'
-                    ? 'lg:col-span-8'
-                    : 'lg:col-span-12'
-                )}
-              >
-                 {/* Processing Error */}
-                 {processingError && (
-                    <Alert variant="danger">
-                        {processingError}
-                    </Alert>
-                 )}
-                 
-                 {/* Animated Processing Progress Bar */}
-                 <ProcessingProgressBar
-                   progress={processingProgress}
-                   isProcessing={isProcessing}
-                 />
-                 
-                 {/* View Mode: Upload (Empty State) */}
-                 {viewMode === 'upload' && (
-                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                        <FileUpload
-                            onFileUploaded={handleFileUploaded}
-                        />
-                     </motion.div>
-                 )}
-                 
-                 {/* Export Panel */}
-                 {processedData.length > 0 && (
-                    <ExportPanel
-                      customFilename={customFilename}
-                      onFilenameChange={setCustomFilename}
-                      onExportClean={() => handleExport({ enhanced: true, comparison: false })}
-                      onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
-                      isProcessing={isProcessing}
-                      hasResults={processedData.length > 0}
+              )}
+              
+              {/* View Mode: Setup */}
+              {viewMode === 'setup' && fileData && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                  {isCompanyColumnMissing && (
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded text-amber-400 text-sm flex items-center gap-3">
+                      <Settings2 className="w-5 h-5 flex-shrink-0" />
+                      Please select the <strong className="mx-1">main Entity/Company Name field</strong> to enable full processing.
+                    </div>
+                  )}
+                  
+                  <DataQualityScoreCard
+                    data={fileData.data}
+                    headers={fileData.headers}
+                    config={config}
+                  />
+                  
+                  {showBatchMode && (
+                    <BatchFileUpload
+                      config={config}
+                      onBatchComplete={(results) => {
+                        console.log('Batch processing complete:', results);
+                      }}
                     />
-                 )}
-                 
-                 {/* View Mode: Setup (Live Preview + Stats) */}
-                 {viewMode === 'setup' && fileData && (
-                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                        {isCompanyColumnMissing && (
-                            <Alert className="bg-[#09304D] border-[#0051af] text-[#fbab2c]">
-                                Please select the <strong>main Entity/Company Name field</strong> to enable full processing features.
-                            </Alert>
-                        )}
-                        
-                        {/* Data Quality Score Card */}
-                        <DataQualityScoreCard
-                          data={fileData.data}
-                          headers={fileData.headers}
-                          config={config}
-                        />
-                        
-                        {/* Batch Mode */}
-                        {showBatchMode && (
-                          <BatchFileUpload
-                            config={config}
-                            onBatchComplete={(results) => {
-                              console.log('Batch processing complete:', results);
-                            }}
-                          />
-                        )}
-                        
-                        <PreviewTable 
-                            data={fileData.data} 
-                            headers={fileData.headers} 
-                            title="Input Data Preview"
-                            companyNameColumn={config.companyNameColumn}
-                            onCompanyNameColumnChange={handleCompanyFieldSelection}
-                            suggestedCompanyColumn={
-                                !isCompanySuggestionAcknowledged ? suggestedCompanyColumn : ''
-                            }
-                            onSuggestedCompanyColumnApply={
-                                !isCompanySuggestionAcknowledged && suggestedCompanyColumn
-                                  ? () => handleCompanyFieldSelection(suggestedCompanyColumn)
-                                  : undefined
-                            }
-                        />
-                        
-                        <StatsPanel
-                            fileData={fileData}
-                            processedData={processedData}
-                            stats={processingStats}
-                            wordFrequencyConfig={{
-                                columns: derivedColumns,
-                                selectedColumns: config.wordFrequencyColumns,
-                                excludeStopwords: config.excludeStopwords,
-                                existingExclusions: exclusionList
-                            }}
-                            onWordFrequencyChange={{
-                                onColumnSelectionChange: (cols) => handleConfigChange({ wordFrequencyColumns: cols }),
-                                onExcludeStopwordsChange: (exclude) => handleConfigChange({ excludeStopwords: exclude }),
-                                onAddToExclusion: handleAddWordToExclusion
-                            }}
-                        />
+                  )}
+                  
+                  <PreviewTable 
+                    data={fileData.data} 
+                    headers={fileData.headers} 
+                    title="Input Data Preview"
+                    companyNameColumn={config.companyNameColumn}
+                    onCompanyNameColumnChange={handleCompanyFieldSelection}
+                    suggestedCompanyColumn={
+                      !isCompanySuggestionAcknowledged ? suggestedCompanyColumn : ''
+                    }
+                    onSuggestedCompanyColumnApply={
+                      !isCompanySuggestionAcknowledged && suggestedCompanyColumn
+                        ? () => handleCompanyFieldSelection(suggestedCompanyColumn)
+                        : undefined
+                    }
+                  />
+                  
+                  <StatsPanel
+                    fileData={fileData}
+                    processedData={processedData}
+                    stats={processingStats}
+                    wordFrequencyConfig={{
+                      columns: derivedColumns,
+                      selectedColumns: config.wordFrequencyColumns,
+                      excludeStopwords: config.excludeStopwords,
+                      existingExclusions: exclusionList
+                    }}
+                    onWordFrequencyChange={{
+                      onColumnSelectionChange: (cols) => handleConfigChange({ wordFrequencyColumns: cols }),
+                      onExcludeStopwordsChange: (exclude) => handleConfigChange({ excludeStopwords: exclude }),
+                      onAddToExclusion: handleAddWordToExclusion
+                    }}
+                  />
 
-                        <div className="flex justify-end pt-2">
-                          {isProcessing ? (
-                            <Button variant="danger" size="sm" onClick={handleCancelProcessing}>
-                              <XCircle className="w-4 h-4 mr-2" /> Cancel
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={handleStartProcessing}
-                              disabled={
-                                !fileData ||
-                                config.selectedColumns.length === 0 ||
-                                isCompanyColumnMissing ||
-                                isReferenceFileMissing
-                              }
-                            >
-                              <Sparkles className="w-4 h-4 mr-2" /> Start Processing
-                            </Button>
-                          )}
-                        </div>
-                     </motion.div>
-                 )}
-                 
-                 {/* View Mode: Results */}
-                 {viewMode === 'results' && processingStats && (
-                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                         <ResultsDisplay
-                            stats={processingStats}
-                            originalData={fileData?.data || []}
-                            processedData={processedData}
-                            cumulativeStats={cumulativeStats}
-                         />
-                     </motion.div>
-                 )}
-             </div>
+                  {/* Bottom Action Bar */}
+                  <div className="flex justify-end pt-2 sticky bottom-0 bg-obsidian-base pb-2">
+                    {isProcessing ? (
+                      <button
+                        onClick={handleCancelProcessing}
+                        className="px-6 py-2.5 text-sm font-medium text-white bg-neon-red rounded hover:bg-red-600 transition-all flex items-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancel Processing
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStartProcessing}
+                        disabled={!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing || isReferenceFileMissing}
+                        className="px-6 py-2.5 text-sm font-bold text-obsidian-base bg-electric-cyan rounded hover:bg-electric-cyan-dark transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed electric-hover aurora-glow"
+                      >
+                        <Zap className="w-4 h-4" />
+                        Start Processing
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+              
+              {/* View Mode: Results */}
+              {viewMode === 'results' && processingStats && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <ResultsDisplay
+                    stats={processingStats}
+                    originalData={fileData?.data || []}
+                    processedData={processedData}
+                    cumulativeStats={cumulativeStats}
+                  />
+                </motion.div>
+              )}
+            </div>
           </div>
+        </div>
       </main>
       
       {/* Column Profiler Modal */}

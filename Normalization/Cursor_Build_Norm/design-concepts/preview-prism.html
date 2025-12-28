@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prism Design Preview - EntityMatch Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-white: #FFFFFF;
+      --bg-snow: #FAFBFC;
+      --bg-gray: #F3F4F6;
+      --border: #E5E7EB;
+      --primary: #667EEA;
+      --primary-dark: #5A67D8;
+      --success: #10B981;
+      --error: #EF4444;
+      --text-dark: #111827;
+      --text-body: #374151;
+      --text-muted: #6B7280;
+      --text-light: #9CA3AF;
+      --gradient: linear-gradient(135deg, #667EEA 0%, #64B5F6 50%, #4DD0E1 100%);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+      background: var(--bg-snow);
+      color: var(--text-body);
+      min-height: 100vh;
+    }
+    .app-container { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      transition: all 0.35s ease;
+    }
+    .sidebar.collapsed { width: 0; padding: 0; overflow: hidden; }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding: 0 8px;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+    }
+    .logo-text h1 { font-size: 16px; font-weight: 600; color: var(--text-dark); letter-spacing: -0.02em; }
+    .logo-text span { font-size: 12px; color: var(--text-muted); }
+    .nav-section { flex: 1; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
+      font-size: 14px;
+      color: var(--text-body);
+    }
+    .nav-item:hover { background: var(--bg-gray); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(100,181,246,0.1));
+      color: var(--primary);
+      font-weight: 500;
+    }
+    .nav-icon { font-size: 18px; }
+    .sidebar-stats {
+      padding: 16px;
+      background: var(--bg-snow);
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .sidebar-stats-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+    .mini-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .mini-stat-label { font-size: 13px; color: var(--text-muted); }
+    .mini-stat-value { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+    .mini-progress {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .mini-progress-fill {
+      height: 100%;
+      width: 89%;
+      background: var(--gradient);
+      border-radius: 2px;
+    }
+    .sidebar-toggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .sidebar.collapsed ~ .main-content .sidebar-toggle { display: flex; }
+
+    /* Main Content */
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header {
+      height: 64px;
+      background: var(--bg-white);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-title { font-size: 18px; font-weight: 600; color: var(--text-dark); letter-spacing: -0.01em; }
+    .header-sub { font-size: 14px; color: var(--text-muted); }
+    .header-actions { display: flex; gap: 10px; }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(102,126,234,0.25);
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    }
+    .btn-secondary { background: var(--bg-gray); color: var(--text-body); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text-body);
+      border: 1.5px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-gradient {
+      background: var(--gradient);
+      color: white;
+      box-shadow: 0 4px 16px rgba(102,126,234,0.3);
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 24px;
+      overflow-y: auto;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+    .card-gradient {
+      background: linear-gradient(white, white) padding-box,
+                  var(--gradient) border-box;
+      border: 2px solid transparent;
+    }
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-body { padding: 24px; }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .upload-zone:hover {
+      border-color: var(--primary);
+      background: rgba(102,126,234,0.02);
+    }
+    .upload-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      background: var(--bg-snow);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .upload-text h3 { font-size: 16px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+    .upload-text p { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .stat-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .stat-icon { font-size: 24px; margin-bottom: 8px; }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); margin-top: 4px; }
+
+    /* Config Sections */
+    .config-section { border-bottom: 1px solid var(--border); }
+    .config-section:last-child { border-bottom: none; }
+    .config-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .config-header:hover { background: var(--bg-snow); }
+    .config-header-left { display: flex; align-items: center; gap: 12px; }
+    .config-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--bg-snow);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .config-title { font-size: 14px; font-weight: 500; color: var(--text-dark); }
+    .config-subtitle { font-size: 12px; color: var(--text-muted); }
+    .chevron { color: var(--text-light); transition: transform 0.3s ease; }
+    .config-section.expanded .chevron { transform: rotate(180deg); }
+    .config-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: var(--bg-snow);
+    }
+    .config-section.expanded .config-content { max-height: 300px; }
+    .config-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .option-info h4 { font-size: 13px; font-weight: 500; color: var(--text-dark); }
+    .option-info p { font-size: 12px; color: var(--text-muted); }
+
+    /* Toggle Switch */
+    .toggle {
+      width: 44px;
+      height: 26px;
+      background: var(--border);
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .toggle.active { background: var(--primary); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .toggle.active::after { left: 21px; }
+
+    /* Quality Score */
+    .quality-section { text-align: center; padding: 24px; }
+    .score-display { position: relative; width: 140px; height: 140px; margin: 0 auto 16px; }
+    .score-ring { width: 100%; height: 100%; }
+    .score-ring circle { fill: none; stroke-width: 10; }
+    .score-ring .bg { stroke: var(--border); }
+    .score-ring .progress {
+      stroke: url(#prism-gradient);
+      stroke-linecap: round;
+      stroke-dasharray: 377;
+      stroke-dashoffset: 42;
+      transform: rotate(-90deg);
+      transform-origin: center;
+    }
+    .score-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .score-label { font-size: 13px; color: var(--success); font-weight: 600; }
+
+    /* Progress */
+    .progress-section { margin-top: 24px; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
+    .progress-phase { color: var(--text-body); font-weight: 500; }
+    .progress-percent { color: var(--primary); }
+    .progress-bar { height: 8px; background: var(--bg-gray); border-radius: 4px; overflow: hidden; }
+    .progress-fill {
+      height: 100%;
+      width: 67%;
+      background: var(--gradient);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    /* Design Label */
+    .design-label {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--gradient);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(102,126,234,0.3);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">✧</div>
+        <div class="logo-text">
+          <h1>EntityMatch Pro</h1>
+          <span>Data Studio</span>
+        </div>
+      </div>
+      <nav class="nav-section">
+        <div class="nav-item"><span class="nav-icon">🏠</span> Home</div>
+        <div class="nav-item active"><span class="nav-icon">⚙️</span> Configuration</div>
+        <div class="nav-item"><span class="nav-icon">📚</span> Dictionaries</div>
+        <div class="nav-item"><span class="nav-icon">💾</span> Saved Configs</div>
+      </nav>
+      <div class="sidebar-stats">
+        <div class="sidebar-stats-title">Session Stats</div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Total Rows</span>
+          <span class="mini-stat-value">1,234</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-stat-label">Quality</span>
+          <span class="mini-stat-value">89%</span>
+        </div>
+        <div class="mini-progress"><div class="mini-progress-fill"></div></div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="sidebar-toggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">☰</div>
+      
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <span class="header-title">Configuration</span>
+          <span class="header-sub">Data Processing Settings</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline">📊 Profiler</button>
+          <button class="btn btn-secondary">📁 Batch</button>
+          <button class="btn btn-gradient">✨ Process</button>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="content-area">
+        <div class="left-column">
+          <!-- Upload Card -->
+          <div class="card card-gradient">
+            <div class="card-header"><span class="card-title">📤 Upload CSV</span></div>
+            <div class="card-body">
+              <div class="upload-zone">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                  <h3>Drag your CSV file here</h3>
+                  <p>or click to browse</p>
+                  <button class="btn btn-primary">Select from Computer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-value">1,234</div>
+              <div class="stat-label">Rows</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">✓</div>
+              <div class="stat-value">89%</div>
+              <div class="stat-label">Valid</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🔄</div>
+              <div class="stat-value">234</div>
+              <div class="stat-label">Duplicates</div>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="card" style="margin-top: 24px;">
+            <div class="card-header"><span class="card-title">⚡ Progress</span></div>
+            <div class="card-body">
+              <div class="progress-section">
+                <div class="progress-header">
+                  <span class="progress-phase">Cleaning & Normalization</span>
+                  <span class="progress-percent">67%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-column">
+          <!-- Quality Score -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">🎯 Quality</span></div>
+            <div class="card-body">
+              <div class="quality-section">
+                <div class="score-display">
+                  <svg class="score-ring" viewBox="0 0 140 140">
+                    <defs>
+                      <linearGradient id="prism-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#667EEA"/>
+                        <stop offset="50%" stop-color="#64B5F6"/>
+                        <stop offset="100%" stop-color="#4DD0E1"/>
+                      </linearGradient>
+                    </defs>
+                    <circle class="bg" cx="70" cy="70" r="60"/>
+                    <circle class="progress" cx="70" cy="70" r="60"/>
+                  </svg>
+                  <div class="score-number">89</div>
+                </div>
+                <div class="score-label">Excellent</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Config -->
+          <div class="card" style="margin-top: 24px;">
+            <div class="card-header"><span class="card-title">⚙️ Options</span></div>
+            <div class="card-body" style="padding: 0;">
+              <div class="config-section expanded">
+                <div class="config-header">
+                  <div class="config-header-left">
+                    <div class="config-icon">🧹</div>
+                    <div><div class="config-title">Cleaning</div><div class="config-subtitle">2 options enabled</div></div>
+                  </div>
+                  <span class="chevron">▼</span>
+                </div>
+                <div class="config-content">
+                  <div class="config-option">
+                    <div class="option-info"><h4>Uppercase</h4><p>Convert text</p></div>
+                    <div class="toggle"></div>
+                  </div>
+                  <div class="config-option">
+                    <div class="option-info"><h4>Normalize</h4><p>Clean whitespace</p></div>
+                    <div class="toggle active"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="config-section">
+                <div class="config-header">
+                  <div class="config-header-left">
+                    <div class="config-icon">📞</div>
+                    <div><div class="config-title">Phone & URLs</div><div class="config-subtitle">1 option enabled</div></div>
+                  </div>
+                  <span class="chevron">▶</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="design-label">🌈 Prism Design</div>
+
+  <script>
+    document.querySelectorAll('.config-header').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('expanded')));
+    document.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', () => t.classList.toggle('active')));
+  </script>
+</body>
+</html>
+
