@@ -212,8 +212,10 @@ export default function Home() {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light-mode');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light-mode');
     }
     if (typeof window !== 'undefined') {
       saveTheme(isDarkMode ? 'dark' : 'light');
@@ -594,16 +596,30 @@ export default function Home() {
     }
   };
   
-  const handleNavigate = (section: string) => {
+  const handleNavigate = useCallback((section: string) => {
     if (section === 'dashboard') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (section === 'configuration') {
-      const configElement = document.getElementById('configuration');
-      if (configElement) {
-        configElement.scrollIntoView({ behavior: 'smooth' });
-      }
+      return;
     }
-  };
+
+    if (section === 'configuration') {
+      if (viewMode === 'upload') {
+        setViewMode('setup');
+      }
+      if (viewMode === 'results') {
+        setIsConfigVisibleOnResults(true);
+      }
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const configElement = document.getElementById('configuration');
+          if (configElement) {
+            configElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 0);
+      });
+    }
+  }, [viewMode, setIsConfigVisibleOnResults, setViewMode]);
   
   const isCompanyColumnMissing = !config.companyNameColumn;
   const isReferenceFileMissing = config.cityStateValidationEnabled && referenceData.length === 0;
@@ -641,12 +657,20 @@ export default function Home() {
   // Splash Screen - Obsidian Style
   if (showSplash) {
     return (
-      <div className="flex min-h-screen bg-obsidian-base">
+      <div
+        className={clsx(
+          'flex min-h-screen items-center justify-center transition-colors',
+          isDarkMode ? 'bg-obsidian-base text-white' : 'bg-slate-50 text-slate-900'
+        )}
+      >
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-base"
+          className={clsx(
+            'fixed inset-0 z-50 flex items-center justify-center',
+            isDarkMode ? 'bg-obsidian-base' : 'bg-slate-100'
+          )}
         >
           <div className="relative w-full h-full">
             <Image
@@ -657,7 +681,14 @@ export default function Home() {
               unoptimized
               className="object-cover opacity-40"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-obsidian-base via-obsidian-base/50 to-transparent" />
+            <div
+              className={clsx(
+                'absolute inset-0',
+                isDarkMode
+                  ? 'bg-gradient-to-t from-obsidian-base via-obsidian-base/50 to-transparent'
+                  : 'bg-gradient-to-t from-white via-white/60 to-transparent'
+              )}
+            />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -702,7 +733,12 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen bg-obsidian-base">
+    <div
+      className={clsx(
+        'flex min-h-screen transition-colors',
+        isDarkMode ? 'bg-obsidian-base text-white' : 'bg-slate-50 text-slate-900'
+      )}
+    >
       <Sidebar
         totalRecords={fileData?.data.length || 0}
         totalColumns={fileData?.headers.length || 0}
@@ -713,7 +749,12 @@ export default function Home() {
         onNavigate={handleNavigate}
       />
       
-      <main className="flex-1 flex flex-col overflow-hidden min-h-screen">
+      <main
+        className={clsx(
+          'flex-1 flex flex-col overflow-hidden min-h-screen transition-colors',
+          isDarkMode ? '' : 'bg-white'
+        )}
+      >
         {/* Header Banner with GIF */}
         <div className="relative h-32 flex-shrink-0">
           <Image

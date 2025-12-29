@@ -84,11 +84,8 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
           {onCompanyNameColumnChange && (
             <div className="flex flex-col gap-2 w-full lg:w-auto">
               <div>
-                <p className="text-xs font-medium text-amber-400 uppercase tracking-wide">
-                  Main Entity/Company Name Field
-                </p>
-                <p className="text-[11px] text-gray-500">
-                  Select the main field containing entity names.
+                <p className="text-xs font-medium text-amber-400 tracking-wide">
+                  Select the master field for entity/company name
                 </p>
               </div>
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
@@ -104,7 +101,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={onSuggestedCompanyColumnApply}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap pulse-highlight"
                   >
                     Use suggested ({suggestedCompanyColumn})
                   </Button>

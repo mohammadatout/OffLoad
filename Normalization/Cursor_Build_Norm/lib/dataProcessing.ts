@@ -24,6 +24,24 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
   'wisconsin': 'WI', 'wyoming': 'WY'
 };
 
+const ADDRESS_COLUMN_HINTS = [
+  'address',
+  'street',
+  'road',
+  'rd',
+  'avenue',
+  'ave',
+  'city',
+  'state',
+  'zip',
+  'postal',
+  'location',
+  'suite',
+  'unit',
+  'building',
+  'floor'
+];
+
 // Pre-compiled address replacement patterns (major performance boost)
 const ADDRESS_REPLACEMENTS: { pattern: RegExp; replacement: string }[] = [
   { pattern: /\bstreet\b/gi, replacement: 'ST' },
@@ -775,10 +793,25 @@ export function processCSVData(
     if (config.addressParsingEnabled && addressColumns.length > 0) {
       const parts: string[] = [];
       for (const column of addressColumns) {
-        const addr = String(newRow[column] || '').trim();
-        if (addr) parts.push(standardizeAddressComponent(addr));
+        const rawValue = String(newRow[column] || '').trim();
+        if (!rawValue) continue;
+        const columnName = column.toLowerCase();
+        const shouldStandardize = ADDRESS_COLUMN_HINTS.some((hint) =>
+          columnName.includes(hint)
+        );
+        const parsedValue = shouldStandardize
+          ? standardizeAddressComponent(rawValue)
+          : normalizeEncoding(rawValue).replace(PATTERNS.whitespace, ' ').trim();
+        if (parsedValue) {
+          parts.push(parsedValue);
+        }
       }
-      newRow[parsedFieldName] = parts.join(addressDelimiter);
+      if (parts.length > 0) {
+        newRow[parsedFieldName] = parts.join(addressDelimiter);
+        stats.totalChanges++;
+      } else {
+        newRow[parsedFieldName] = '';
+      }
     }
 
     return newRow;
