@@ -1,0 +1,27 @@
+internal,reason,best_external,best_score
+AK-CITY OF ANCHORAGE,No external entities for state AK,,
+AK-CITY AND BOROUGH OF JUNEAU,No external entities for state AK,,
+CO-ADAMS COUNTY,No external entities for state CO,,
+CO-ARCHULETA SD,No external entities for state CO,,
+CO-CITY OF AURORA,No external entities for state CO,,
+CO-CITY OF GRAND JUNCTION,No external entities for state CO,,
+CO-COLORADO SPRINGS SD 11,No external entities for state CO,,
+CO-COLORADO STATE UNIVERSITY,No external entities for state CO,,
+CO-ESTES PARK SD,No external entities for state CO,,
+CO-GREELEY-EVANS SCHOOL DISTRICT 6,No external entities for state CO,,
+CO-JEFFERSON COUNTY,No external entities for state CO,,
+CO-LARIMER COUNTY,No external entities for state CO,,
+CO-N CONEJOS SD,No external entities for state CO,,
+CO-OURAY SD,No external entities for state CO,,
+CO-SUMMIT SCHOOL DISTRICT,No external entities for state CO,,
+CO-TOWN OF GYPSUM,No external entities for state CO,,
+CO-TOWN OF TIMNATH,No external entities for state CO,,
+CO-WELD COUNTY,No external entities for state CO,,
+FL-CAPTIVA ISLAND FIRE CONTROL DISTRICT,Best score 0.665 below threshold,FL-INDIAN RIVER COUNTY SCHOOL DISTRICT,0.664806796333557
+IL-TRI-STATE FIRE PROTECTION DISTRICT,Best score 0.696 below threshold,IL-FOX RIVER WATER RECLAMATION DISTRICT,0.6964932461873639
+ND-UNIVERSITY OF N DAKOTA,No external entities for state ND,,
+SC-NORMANDY SCHOOLS COLLABORATIVE,Best score 0.613 below threshold,SC-BYRNES SCHOOLS,0.6134316017316017
+SD-GROTON AREA SD,No external entities for state SD,,
+SD-RAPID CITY AREA SCHOOLS,No external entities for state SD,,
+SD-SIOUX FALLS SCHOOL DISTRICT,No external entities for state SD,,
+SD-UNIVERSITY OF S DAKOTA,No external entities for state SD,,
