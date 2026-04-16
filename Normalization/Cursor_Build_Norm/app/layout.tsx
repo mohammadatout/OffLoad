@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import AppShell from '@/components/AppShell';
 
 export const metadata: Metadata = {
-  title: 'EntityMatch Pro - Data Wrangling Studio',
-  description: 'Clean, normalize, and deduplicate your entity data with ease',
+  title: 'OffLoad Suite',
+  description: 'Data wrangling and entity matching suite',
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

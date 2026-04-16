@@ -34,6 +34,397 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ============================================
+# OBSIDIAN THEME - Matching Normalization App
+# ============================================
+st.markdown("""
+<style>
+    /* === Import Inter font === */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    /* === Hide Streamlit chrome (redundant in unified shell) === */
+    #MainMenu {visibility: hidden;}
+    header[data-testid="stHeader"] {display: none !important;}
+    footer {visibility: hidden;}
+    .stDeployButton {display: none !important;}
+
+    /* === Base / Root === */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* === Main background === */
+    [data-testid="stApp"] {
+        background-color: #000000;
+    }
+    [data-testid="stAppViewContainer"] {
+        background-color: #000000;
+    }
+    .main .block-container {
+        background-color: #000000;
+        padding-top: 2rem;
+    }
+
+    /* === Sidebar === */
+    [data-testid="stSidebar"] {
+        background-color: #0A0A0A;
+        border-right: 1px solid #2A2A2A;
+    }
+    [data-testid="stSidebar"] [data-testid="stMarkdown"] {
+        color: #FFFFFF;
+    }
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stCheckbox label,
+    [data-testid="stSidebar"] .stRadio label,
+    [data-testid="stSidebar"] .stSlider label,
+    [data-testid="stSidebar"] .stTextArea label {
+        color: #FFFFFF !important;
+    }
+    [data-testid="stSidebar"] hr {
+        border-color: #2A2A2A;
+    }
+
+    /* === Headers & Text === */
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 600 !important;
+    }
+    h1 {
+        font-size: 1.75rem !important;
+        letter-spacing: -0.02em;
+    }
+    p, span, label, div {
+        font-family: 'Inter', sans-serif !important;
+    }
+    [data-testid="stMarkdown"] p {
+        color: #E0E0E0;
+    }
+    [data-testid="stMarkdown"] em {
+        color: #9CA3AF;
+    }
+
+    /* === Accent color text (cyan) === */
+    .stSubheader, [data-testid="stSidebar"] h2 {
+        color: #00E5FF !important;
+    }
+
+    /* === Cards / Expanders === */
+    [data-testid="stExpander"] {
+        background-color: #1A1A1A;
+        border: 1px solid #2A2A2A;
+        border-radius: 4px;
+    }
+    [data-testid="stExpander"]:hover {
+        border-color: #3A3A3A;
+    }
+    [data-testid="stExpander"] summary {
+        color: #FFFFFF;
+    }
+    [data-testid="stExpander"] summary:hover {
+        color: #00E5FF;
+    }
+
+    /* === Buttons === */
+    .stButton > button {
+        background-color: #00E5FF;
+        color: #000000;
+        border: none;
+        border-radius: 4px;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 0.8rem;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.15s ease;
+        letter-spacing: 0.01em;
+    }
+    .stButton > button:hover {
+        background-color: #00B8D4;
+        box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        color: #000000;
+    }
+    .stButton > button:active {
+        background-color: #00ACC1;
+    }
+    /* Primary button */
+    .stButton > button[kind="primary"] {
+        background-color: #00E5FF;
+        color: #000000;
+    }
+    /* Secondary / non-primary buttons */
+    .stButton > button[kind="secondary"] {
+        background-color: transparent;
+        color: #9CA3AF;
+        border: 1px solid #2A2A2A;
+    }
+    .stButton > button[kind="secondary"]:hover {
+        border-color: #00E5FF;
+        color: #00E5FF;
+        box-shadow: none;
+    }
+
+    /* === Download button === */
+    .stDownloadButton > button {
+        background-color: transparent;
+        color: #00E5FF;
+        border: 1px solid #2A2A2A;
+        border-radius: 4px;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        transition: all 0.15s ease;
+    }
+    .stDownloadButton > button:hover {
+        border-color: #00E5FF;
+        background-color: rgba(0, 229, 255, 0.05);
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+    }
+
+    /* === File Uploader === */
+    [data-testid="stFileUploader"] {
+        background-color: #1A1A1A;
+        border: 1px dashed #2A2A2A;
+        border-radius: 4px;
+        padding: 1rem;
+    }
+    [data-testid="stFileUploader"]:hover {
+        border-color: #00E5FF;
+        background-color: rgba(0, 229, 255, 0.02);
+    }
+    [data-testid="stFileUploader"] label {
+        color: #FFFFFF !important;
+    }
+    [data-testid="stFileUploader"] small {
+        color: #6B7280 !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background-color: #242424;
+        color: #FFFFFF;
+        border: 1px solid #2A2A2A;
+        border-radius: 4px;
+    }
+
+    /* === Select boxes / Dropdowns === */
+    .stSelectbox > div > div {
+        background-color: #1A1A1A;
+        border-color: #2A2A2A;
+        color: #FFFFFF;
+        border-radius: 4px;
+    }
+    .stSelectbox > div > div:hover {
+        border-color: #3A3A3A;
+    }
+    .stSelectbox > div > div:focus-within {
+        border-color: #00E5FF;
+        box-shadow: 0 0 0 1px #00E5FF;
+    }
+    .stSelectbox label {
+        color: #FFFFFF !important;
+    }
+
+    /* === Checkbox / Radio === */
+    .stCheckbox label, .stRadio label {
+        color: #FFFFFF !important;
+    }
+    .stCheckbox [data-testid="stCheckbox"] {
+        color: #FFFFFF;
+    }
+
+    /* === Slider === */
+    .stSlider label {
+        color: #FFFFFF !important;
+    }
+    .stSlider [data-testid="stThumbValue"] {
+        color: #00E5FF !important;
+    }
+
+    /* === Text area / Input === */
+    .stTextArea textarea, .stTextInput input {
+        background-color: #1A1A1A !important;
+        border: 1px solid #2A2A2A !important;
+        color: #FFFFFF !important;
+        border-radius: 4px !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    .stTextArea textarea:focus, .stTextInput input:focus {
+        border-color: #00E5FF !important;
+        box-shadow: 0 0 0 1px #00E5FF !important;
+    }
+    .stTextArea label, .stTextInput label {
+        color: #FFFFFF !important;
+    }
+
+    /* === Dataframe / Table === */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #2A2A2A;
+        border-radius: 4px;
+    }
+
+    /* === Metrics === */
+    [data-testid="stMetric"] {
+        background-color: #1A1A1A;
+        border: 1px solid #2A2A2A;
+        border-radius: 4px;
+        padding: 1rem;
+    }
+    [data-testid="stMetric"] label {
+        color: #9CA3AF !important;
+        font-size: 0.75rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    [data-testid="stMetric"] [data-testid="stMetricValue"] {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stMetric"] [data-testid="stMetricDelta"] {
+        color: #00E676 !important;
+    }
+
+    /* === Info / Success / Warning / Error boxes === */
+    .stAlert [data-testid="stNotification"] {
+        border-radius: 4px;
+        font-family: 'Inter', sans-serif;
+    }
+    /* Info */
+    [data-baseweb="notification"][kind="info"],
+    div[data-testid="stNotification"][data-stale="false"] {
+        background-color: rgba(0, 229, 255, 0.08);
+        border-left: 3px solid #00E5FF;
+        color: #E0E0E0;
+    }
+    /* Success */
+    .element-container .stSuccess, [data-baseweb="notification"][kind="positive"] {
+        background-color: rgba(0, 230, 118, 0.08) !important;
+        border-left: 3px solid #00E676;
+        color: #E0E0E0;
+    }
+    /* Warning */
+    .element-container .stWarning, [data-baseweb="notification"][kind="warning"] {
+        background-color: rgba(255, 215, 64, 0.08) !important;
+        border-left: 3px solid #FFD740;
+        color: #E0E0E0;
+    }
+    /* Error */
+    .element-container .stError, [data-baseweb="notification"][kind="negative"] {
+        background-color: rgba(255, 82, 82, 0.08) !important;
+        border-left: 3px solid #FF5252;
+        color: #E0E0E0;
+    }
+
+    /* === Progress bar === */
+    .stProgress > div > div {
+        background-color: #2A2A2A;
+        border-radius: 4px;
+    }
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #00E5FF, #7C4DFF) !important;
+        border-radius: 4px;
+    }
+
+    /* === Tabs === */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        border-bottom: 1px solid #2A2A2A;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #9CA3AF;
+        background-color: transparent;
+        border: none;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #FFFFFF;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #00E5FF !important;
+        border-bottom: 2px solid #00E5FF;
+    }
+
+    /* === Divider (hr) === */
+    hr {
+        border-color: #2A2A2A !important;
+    }
+
+    /* === Spinner === */
+    .stSpinner > div {
+        border-top-color: #00E5FF !important;
+    }
+
+    /* === Scrollbar (Obsidian style) === */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #0A0A0A;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #2A2A2A;
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #00E5FF;
+    }
+
+    /* === Caption text === */
+    .stCaption, [data-testid="stCaptionContainer"] {
+        color: #6B7280 !important;
+    }
+
+    /* === Column gap fix === */
+    [data-testid="column"] {
+        padding: 0 0.5rem;
+    }
+
+    /* === Multiselect === */
+    .stMultiSelect > div > div {
+        background-color: #1A1A1A;
+        border-color: #2A2A2A;
+        color: #FFFFFF;
+    }
+
+    /* === Header anchor links === */
+    .css-zt5igj a, a.viewerBadge_container__1QSob {
+        display: none;
+    }
+
+    /* === Remove default Streamlit padding on top === */
+    .block-container {
+        padding-top: 1.5rem;
+    }
+
+    /* === Popover / Tooltips === */
+    [data-baseweb="popover"] {
+        background-color: #1A1A1A !important;
+        border: 1px solid #2A2A2A !important;
+        border-radius: 4px !important;
+    }
+    [data-baseweb="popover"] * {
+        color: #E0E0E0 !important;
+    }
+
+    /* === Selectbox dropdown menu === */
+    [data-baseweb="menu"], [data-baseweb="select"] [role="listbox"] {
+        background-color: #1A1A1A !important;
+        border: 1px solid #2A2A2A !important;
+    }
+    [data-baseweb="menu"] li {
+        color: #FFFFFF !important;
+    }
+    [data-baseweb="menu"] li:hover {
+        background-color: #242424 !important;
+    }
+    [data-baseweb="menu"] li[aria-selected="true"] {
+        background-color: rgba(0, 229, 255, 0.1) !important;
+        color: #00E5FF !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
 if 'matches' not in st.session_state:
     st.session_state.matches = None
@@ -667,22 +1058,96 @@ class MultiStageEntityMatcher:
         return result_df, stats
 
 
+def _section_header(title: str):
+    """Render a styled section header matching the Normalization app."""
+    st.markdown(f"""
+    <div style="
+        border-bottom: 1px solid #2A2A2A;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        margin-top: 0.5rem;
+    ">
+        <h3 style="
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin: 0;
+        ">{title}</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def _label(text: str):
+    """Render a small cyan label like the Normalization app's sub-labels."""
+    st.markdown(f"""
+    <p style="
+        font-size: 0.75rem;
+        color: #00E5FF;
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        letter-spacing: 0.02em;
+    ">{text}</p>
+    """, unsafe_allow_html=True)
+
+
 def main():
-    st.title("🎯 Entity Matcher Pro v4.0")
+    # Header banner matching Normalization app style
     st.markdown("""
-    *Context-aware multi-stage matching with enhanced word-order tolerance*
-    
-    **v4.0 Features:**
-    - ✅ Multi-stage matching (Exact → High Confidence → Enhanced → Review)
-    - ✅ Context-aware validation (City & Entity Type checking)
-    - ✅ Enhanced word-order tolerance (ISANTI COUNTY = COUNTY OF ISANTI)
-    - ✅ User-configurable abbreviation dictionary
-    - ✅ Top-3 candidates for ambiguous matches
-    """)
-    
+    <div style="
+        background: linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%);
+        border-bottom: 1px solid #2A2A2A;
+        padding: 1.5rem 2rem;
+        margin: -1.5rem -1rem 1.5rem -1rem;
+    ">
+        <p style="
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: #00E5FF;
+            margin-bottom: 4px;
+            font-weight: 500;
+        ">EntityMatch Pro</p>
+        <h1 style="
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin: 0;
+            letter-spacing: -0.02em;
+        ">Entity Matching Engine</h1>
+        <p style="
+            font-size: 0.8rem;
+            color: #6B7280;
+            margin-top: 4px;
+        ">Context-aware multi-stage matching with enhanced word-order tolerance</p>
+    </div>
+    """, unsafe_allow_html=True)
+
     # Sidebar configuration
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.markdown("""
+        <div style="
+            padding: 0.75rem 0 1rem 0;
+            border-bottom: 1px solid #2A2A2A;
+            margin-bottom: 1rem;
+        ">
+            <p style="
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.3em;
+                color: #00E5FF;
+                margin-bottom: 2px;
+                font-weight: 500;
+            ">EntityMatch Pro</p>
+            <p style="
+                font-size: 0.85rem;
+                color: #FFFFFF;
+                font-weight: 600;
+                margin: 0;
+            ">Configuration</p>
+        </div>
+        """, unsafe_allow_html=True)
         
         # State blocking
         use_state_blocking = st.checkbox(
@@ -701,7 +1166,7 @@ def main():
         st.markdown("---")
         
         # Abbreviation management
-        st.subheader("📝 Abbreviation Dictionary")
+        _label("Abbreviation Dictionary")
         
         with st.expander("View/Edit Abbreviations"):
             # Show current abbreviations
@@ -726,7 +1191,7 @@ def main():
         
         st.markdown("---")
         
-        st.subheader("📊 Stage Thresholds")
+        _label("Stage Thresholds")
         st.caption("""
         - **Exact**: 100% (normalized match)
         - **High Confidence**: ≥95%
@@ -735,19 +1200,20 @@ def main():
         - **Review**: <70% (shows top 3)
         """)
     
-    # Main interface
+    # Main interface - File upload section
+    _section_header("Data Upload")
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.header("📁 Internal Data")
+        _label("Internal Data")
         internal_file = st.file_uploader(
             "Upload Internal CSV",
             type=['csv'],
             key='internal'
         )
-        
+
     with col2:
-        st.header("📁 External Data")
+        _label("External Data")
         external_file = st.file_uploader(
             "Upload External CSV",
             type=['csv'],
@@ -772,7 +1238,7 @@ def main():
             st.dataframe(external_df.head(3), use_container_width=True)
         
         # Column selection
-        st.header("🔗 Column Mapping")
+        _section_header("Column Mapping")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -794,7 +1260,7 @@ def main():
         # Match button
         st.markdown("---")
         
-        if st.button("🚀 Start Multi-Stage Matching", type='primary', use_container_width=True):
+        if st.button("Start Multi-Stage Matching", type='primary', use_container_width=True):
             
             progress_bar = st.progress(0)
             progress_text = st.empty()
@@ -823,10 +1289,10 @@ def main():
             st.session_state.matches = result_df
             
             # Display statistics
-            st.success(f"✅ Matching complete in {stats['elapsed_time']:.2f} seconds!")
+            st.success(f"Matching complete in {stats['elapsed_time']:.2f} seconds")
             
             # Stage breakdown
-            st.subheader("📊 Match Breakdown by Stage")
+            _section_header("Match Breakdown by Stage")
             
             col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
@@ -853,7 +1319,7 @@ def main():
     # Display results
     if st.session_state.matches is not None:
         st.markdown("---")
-        st.header("📊 Results")
+        _section_header("Results")
         
         # Filter options
         col1, col2, col3 = st.columns(3)
@@ -899,7 +1365,7 @@ def main():
         st.dataframe(display_df, use_container_width=True, height=400)
         
         # Review section
-        with st.expander("🔍 Items Needing Review"):
+        with st.expander("Items Needing Review"):
             review_df = st.session_state.matches[
                 st.session_state.matches['Match_Stage'] == 'review'
             ]
@@ -916,9 +1382,10 @@ def main():
                 st.success("No items need review!")
         
         # Download button
+        st.markdown("<div style='height: 0.5rem'></div>", unsafe_allow_html=True)
         csv = display_df.to_csv(index=False)
         st.download_button(
-            label="📥 Download Results as CSV",
+            label="Download Results as CSV",
             data=csv,
             file_name=f"entity_matches_v4_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
