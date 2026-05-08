@@ -10,3 +10,8 @@ python-Levenshtein>=0.21.0
 jellyfish>=1.0.0
 fuzzywuzzy>=0.18.0
 plotly>=5.17.0
+
+# FastAPI sidecar (matcher_service.py)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
