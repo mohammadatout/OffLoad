@@ -1,0 +1,143 @@
+# EntityMatch Pro — Cursor Rules
+
+You are refactoring the EntityMatch Pro frontend into a two-context aesthetic system. Treat the rules below as non-negotiable. Reference implementations live in `01-landing.jsx` (landing) and `entitymatch-redesign.jsx` (tool).
+
+## TWO CONTEXTS — DO NOT BLEND
+
+- **Landing route** (`/`, `/marketing`): cream editorial minimalism. Big typography, generative visual, pill buttons.
+- **App routes** (`/offload`, `/normalization`, `/matching`): dark workbench. Dense, functional, single accent.
+- The bridge between them is the "Start matching" CTA on the landing.
+- The two contexts must NEVER share screens. No marketing copy, gradients, or hero imagery inside app routes. No app chrome on the landing.
+
+---
+
+## CONTEXT A — LANDING (cream editorial)
+
+### Tokens
+- `--bg`: `#F4F3EE` (warm off-white, never pure white)
+- `--fg`: `#0A0A0A` (near-black, never pure black)
+- `--muted`: `#6B6B66`
+- `--border`: `#E5E3DC`
+- Single accent: the foreground itself. No second color.
+
+### Typography
+- Family: `Inter`, `Geist`, or `Söhne` — sans-serif grotesk
+- Hero: `clamp(3.5rem, 9vw, 8rem)`, weight 500, letter-spacing -0.04em, line-height 0.95
+- Body: `1rem`, weight 400, line-height 1.6
+- Mono labels: `0.6875rem`, UPPERCASE, letter-spacing 0.15em
+
+### Required signature elements
+1. Faint background grid: 1px lines at 8% opacity, 80×80px cells
+2. Em-dash eyebrow above headline: `— THE STUDIO FOR CLEAN DATA`
+3. Hand-drawn animated underline beneath one key word in the hero
+4. Pill buttons: solid black primary with `→` arrow, transparent bordered secondary
+5. Stat row at hero bottom: huge number → small description → SMALL CAPS brand
+6. Generative canvas visual on the right (particle/character cluster, slow rotation)
+
+### Forbidden on landing
+- Gradients, shadows, glows
+- Stock photography, illustrated mascots
+- Multiple accent colors
+- Pure white `#FFFFFF` or pure black `#000000`
+
+---
+
+## CONTEXT B — APP (dark workbench)
+
+### Tokens
+- `--bg`: `#0B0D0E` (page)
+- `--surface`: `#0F1112` (cards, panels)
+- `--surface-hover`: `#15181A`
+- `--border`: `#1F2224`
+- `--border-strong`: `#2A2E31`
+- `--text`: `#E8E8E6`
+- `--text-muted`: `#8A8F93`
+- `--text-subtle`: `#5A5F63`
+- `--accent`: `#2DD4BF` (cyan, only used for: active state, primary CTA, status pulse)
+- `--warn`: `#E5A23B` (warnings only)
+
+### Typography
+- Body: Inter, 12–14px, weight 400–500
+- Mono: JetBrains Mono / Geist Mono — used for: labels, metadata, data tables, keyboard shortcuts, numeric values
+- Section labels: `0.625rem`, UPPERCASE, letter-spacing 0.075em, mono, color `--text-subtle`
+
+### Required architecture
+1. **Top bar** (`h-12`, 48px): brand left, tab nav center (Offload / Normalization / Matching Engine), context stats right (rows · cols · quality).
+2. **Step indicator bar** (`py-3`): horizontal, 4 steps (Upload → Configure → Process → Results), active step in cyan, completed steps with checkmark, future steps muted.
+3. **Two-column body**: left config panel (`320px`), right work area (`flex-1`). Max content width `1440px`.
+4. **Config sections**: ALL collapsed by default except the active one. Each has icon + title + optional badge ("3 active" in cyan/10%). Click to expand.
+5. **One primary CTA** per screen: solid cyan button at the bottom of the config panel ("Run Normalization", "Run Pipeline").
+6. **Quality score**: ONE consolidated card with score number + 4 bar metrics (Completeness, Validity, Consistency, Uniqueness). Not 4 separate cards.
+
+### Forbidden inside app routes
+- Marketing-style stat cards (`10x faster`, `99% accuracy`, etc.) — these belong on the landing only
+- Gradient backgrounds, hero imagery, network/abstract images
+- "Powered by" branding, redundant logos
+- Multiple accent colors competing for attention (purple + green + red + cyan = chaos)
+- Default-expanded config sections (everything collapsed except active)
+- Pure white `#FFFFFF` anywhere
+- Box shadows beyond a single 1px border
+
+---
+
+## SHARED COMPONENT RULES
+
+### Buttons
+- Primary in app: `bg-[#2DD4BF] text-[#0B0D0E]`, rounded `md`, weight 500
+- Primary on landing: `bg-[#0A0A0A] text-white`, rounded `full` (pill), with arrow icon
+- Secondary: transparent with 1px border, same shape as primary in that context
+- ALWAYS one primary per screen. If you have two primaries, you have zero primaries.
+
+### Cards
+- App: 1px border `--border`, bg `--surface`, no shadow, rounded `md`
+- Landing: no card chrome — content sits on the cream bg directly
+
+### Tables (app)
+- Mono font, 11px text, 10px uppercase tracked headers
+- 1px row borders in `--border`
+- Hover row: `--surface-hover`
+- No zebra striping
+
+### Toggles (app)
+- Width 28px, height 16px, knob 12px
+- On: `bg-[#2DD4BF]`, off: `bg-[#2A2E31]`
+
+### Step indicator (app)
+- Pill containers, cyan ring on active, checkmark on done, muted number on future
+- `ChevronRight` separators between steps in muted color
+
+---
+
+## MIGRATION DIRECTIVES
+
+When refactoring existing screens, in order:
+
+1. DELETE the marketing hero from `/normalization` (the gradient banner with the network image and "Data Wrangling Studio" overlay).
+2. DELETE the 4 marketing stat cards (`10x faster`, `85% less time`, `99% accuracy`, `40% reduction`).
+3. DELETE "Powered by EntityMatch Pro" text inside app routes.
+4. COLLAPSE all config sections by default. Only the actively-edited section is open.
+5. CONSOLIDATE the quality metrics: replace the 87 gauge + 4 separate metric bars + column breakdown into ONE quality card with bars inside.
+6. ADD the step indicator under the top bar on every app route.
+7. NORMALIZE colors: map all existing icon colors (purple, green, red) to either `--text-muted` (default) or `--accent` (active state only).
+8. UNIFY the Matching Engine page (`/matching`): currently nearly empty, must use the same shell, step indicator, and density as `/normalization`.
+
+---
+
+## VOICE INSIDE THE APP
+
+- Section titles are short and declarative: "Configuration", "Cleaning", "Quality"
+- No marketing language anywhere in the tool
+- Banned in-app words: amazing, powerful, lightning-fast, intelligent, smart, enterprise-grade
+- Status messages are factual: "Auto-saved", "1,228 rows", "Awaiting input" — not "Lightning fast!" or "Ready to crush data!"
+
+---
+
+## STACK
+
+- React 18+ with hooks
+- Tailwind CSS (config uses tokens above)
+- lucide-react for icons (NEVER mix icon libraries)
+- next/font or system stack for Inter
+- No Framer Motion required for v1 — CSS transitions only. Add Motion later if needed for slide-overs and step transitions.
+
+When in doubt, mirror `01-landing.jsx` for landing concerns and `entitymatch-redesign.jsx` for app concerns. Do not invent new patterns.

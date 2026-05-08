@@ -1,0 +1,62 @@
+Design breakdown — "Optimus" landing page
+A spec you can hand to anyone (or use yourself) to recreate the same theme.
+
+1. Overall vibe / mood
+Editorial-tech. Reads more like a high-end print magazine than a typical SaaS site.
+Monochrome + restraint: only black, off-white, and one subtle gray. No brand color in the hero — confidence comes from typography and whitespace.
+Generous whitespace with massive type as the centerpiece.
+Subtle "machine" texture in the background hints at the technical product without illustrations or 3D renders.
+2. Color palette
+Role	Color	Notes
+Background	#F4F2EC (warm off-white / bone)	Slightly cream, never pure white
+Primary text	#0A0A0A (near-black)	Used for headline + body
+Muted text	#6B6B6B	Eyebrow labels, stat captions
+CTA fill	#0A0A0A (black pill) with white text	Only saturated element
+Highlight underline	#D9D9D9 light gray block	Behind "scale" word
+Background pattern	Faint #D8D6CE dotted/pixel grid	~10% opacity
+3. Typography
+Display headline: a serif (looks like GT Sectra, Tiempos Headline, or Söhne Breit-style transitional serif). Weight ~500–600. Size around 130–150px at 1440 viewport. Tight line-height (~0.95). Letter-spacing slightly negative.
+Eyebrow + nav + stats labels: a monospace (think JetBrains Mono, IBM Plex Mono, or Söhne Mono). 12–13px, tracking +1, often UPPERCASE for stat captions.
+Body: a clean grotesk sans (Inter/Söhne) at ~16–18px, line-height 1.6, color #333.
+Stat numbers: same serif as headline, ~48–56px, sitting next to small mono captions.
+The interplay of big serif + tiny mono is the signature move.
+
+4. Layout & grid
+Top nav: thin, centered logo block ("Optimus ™" with a tiny TM glyph in mono), nav links in mono on the right, black pill CTA at far right.
+Hero: left-aligned, occupies left ~55% of the viewport. Headline is allowed to break out across two lines ("The platform / to scale").
+Eyebrow line: short horizontal rule + mono label ("— The platform for modern teams").
+Subhead + CTAs sit below the headline. CTAs are aligned with the right edge of the subhead, not below it — slightly unconventional, makes it feel composed.
+Stat strip is full-bleed at the bottom, edges of the page literally clipping the last numbers — implying infinite scroll/marquee.
+5. The hero "machine" graphic
+A large abstract shape (humanoid bust silhouette, broken into vertical pixel/scan-line fragments) sits on the right half.
+It's rendered in light gray on light bg — barely there, almost a watermark.
+Composed of small rectangles arranged on a grid → reads as "data" / "computation" without feeling AI-cliché.
+To recreate: SVG mask of a portrait silhouette, filled with a pixelated/Voronoi pattern at low opacity.
+6. Buttons / interactive elements
+Primary: full black pill, white text, optional small arrow icon, generous horizontal padding (24px x 12px), ~40px tall, fully rounded.
+Secondary: outlined pill, same shape, transparent fill, black border 1px, black text.
+Hover: subtle lift (translateY -1px) + slight darkening.
+7. Stat strip details
+6+ stats laid horizontally with equal spacing.
+Each item: big serif number (e.g. "98%", "300%", "6×", "20 days") + two-line mono caption ("faster deployment / STRIPE").
+Bottom caption is the brand attribution in ALL CAPS mono — gives social proof without a logo cloud.
+Strip overflows the viewport on both edges → suggests it's animated as a slow horizontal marquee.
+8. Animation cues (this is what the original feels like)
+Headline: words fade + rise on load, one line at a time. The gray underline behind "scale" wipes in left-to-right after the word lands.
+Background graphic: slow pixel-shimmer (random rectangles fade in/out at low opacity) — never aggressive, almost ambient.
+Stat strip: continuous slow marquee, right-to-left.
+On scroll: section content fades up with ~80px translateY and stagger.
+Cursor: optional small dot follower (common on these sites).
+All easing is slow + soft (~600–800ms, ease-out cubic). Nothing bounces.
+9. Spacing system
+Base unit 8px.
+Section vertical padding: 96–120px.
+Container max-width: 1280–1360px, centered.
+Gutter from viewport edge: 48–64px on desktop.
+10. The "secret sauce" — what makes it feel premium
+Mixing serif + mono instead of the usual sans-only stack.
+Cream background instead of #fff — feels like paper.
+Negative space first: the headline is enormous but surrounded by air.
+Stat strip clipped at edges — implies motion, breaks the page rectangle.
+No color, no gradient, no glow. Restraint reads as confidence.
+Tiny supporting type (mono labels) makes the big type feel even bigger.

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EntityMatch Pro — Landing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #F4F3EE;
+    --fg: #0A0A0A;
+    --muted: #6B6B66;
+    --border: #E5E3DC;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ============================
+     Faint background grid
+     80x80 cells, 8% opacity
+     ============================ */
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(10,10,10,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(10,10,10,0.04) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  /* ============================
+     Top nav
+     ============================ */
+  header {
+    position: relative;
+    z-index: 10;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    opacity: 0;
+    transform: translateY(-12px);
+    animation: fadeDown 0.7s ease-out 0.1s forwards;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .brand-name {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .brand-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 13px;
+    color: var(--fg);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--muted); }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .nav-signin {
+    font-size: 13px;
+    color: var(--fg);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .nav-signin:hover { color: var(--muted); }
+
+  .nav-cta {
+    background: var(--fg);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    padding: 0 16px;
+    height: 36px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .nav-cta:hover { background: #1F1F1F; }
+
+  /* ============================
+     Hero — asymmetric layout
+     Left ~55% text, Right ~45% visual
+     ============================ */
+  main {
+    position: relative;
+    z-index: 10;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 80px 32px 128px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+
+  /* Eyebrow */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.7s ease-out 0.25s forwards;
+  }
+  .eyebrow-dash {
+    width: 32px;
+    height: 1px;
+    background: var(--fg);
+  }
+  .eyebrow-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Headline */
+  h1 {
+    font-weight: 500;
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s ease-out 0.4s forwards;
+  }
+
+  /* Animated underline on "match." */
+  .underline-word {
+    position: relative;
+    display: inline-block;
+  }
+  .underline-word svg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    width: 100%;
+    height: 0.15em;
+  }
+  .underline-word path {
+    stroke: var(--fg);
+    stroke-width: 3;
+    stroke-linecap: round;
+    fill: none;
+    stroke-dasharray: 250;
+    stroke-dashoffset: 250;
+    animation: drawLine 1s ease-out 1.2s forwards;
+  }
+
+  /* Subhead */
+  .subhead {
+    font-size: 16px;
+    color: #3A3A36;
+    line-height: 1.6;
+    max-width: 440px;
+    margin-bottom: 40px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s ease-out 0.55s forwards;
+  }
+
+  /* CTA buttons */
+  .cta-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s ease-out 0.7s forwards;
+  }
+
+  .btn-pill {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    border-radius: 999px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--fg);
+    color: #fff;
+    padding: 0 16px 0 20px;
+  }
+  .btn-primary:hover {
+    background: #1F1F1F;
+    transform: translateY(-1px);
+  }
+  .btn-primary .arrow-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+  }
+  .btn-primary:hover .arrow-circle { transform: translateX(2px); }
+  .btn-primary .arrow-circle svg {
+    width: 14px;
+    height: 14px;
+    stroke: #fff;
+    stroke-width: 2;
+    fill: none;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--fg);
+    padding: 0 20px;
+  }
+  .btn-secondary:hover {
+    background: rgba(10,10,10,0.05);
+    transform: translateY(-1px);
+  }
+  .btn-secondary svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--fg);
+  }
+
+  /* ============================
+     Particle canvas
+     ============================ */
+  .visual-area {
+    position: relative;
+    aspect-ratio: 1;
+  }
+  .visual-area canvas {
+    width: 100%;
+    height: 100%;
+    mix-blend-mode: multiply;
+  }
+
+  /* ============================
+     Stat row
+     ============================ */
+  .stat-row {
+    margin-top: 128px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    border-top: 1px solid rgba(10,10,10,0.12);
+    padding-top: 32px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.8s ease-out 0.9s forwards;
+  }
+
+  .stat-val {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 8px;
+    font-size: clamp(2rem, 4vw, 3rem);
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .stat-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ============================
+     Animations
+     ============================ */
+  @keyframes fadeDown {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* ============================
+     Responsive
+     ============================ */
+  @media (max-width: 900px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+    .visual-area { display: none; }
+    .nav-links { display: none; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 16px 20px; }
+    main { padding: 48px 20px 80px; }
+    .cta-group { flex-direction: column; align-items: flex-start; }
+    .btn-pill { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<!-- ============ TOP NAV ============ -->
+<header>
+  <div class="brand">
+    <span class="brand-name">EntityMatch</span>
+    <span class="brand-tag">PRO</span>
+  </div>
+
+  <ul class="nav-links">
+    <li><a href="#">Product</a></li>
+    <li><a href="#">How it works</a></li>
+    <li><a href="#">Engine</a></li>
+    <li><a href="#">Docs</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <a href="#" class="nav-signin">Sign in</a>
+    <button class="nav-cta">Start matching</button>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<main>
+  <div class="hero-grid">
+    <!-- Left: text -->
+    <div>
+      <div class="eyebrow">
+        <span class="eyebrow-dash"></span>
+        <span class="eyebrow-text">The studio for clean data</span>
+      </div>
+
+      <h1>
+        From mess<br>
+        to <span class="underline-word">match.<svg viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M2 8 Q50 2 100 6 T198 5"/></svg></span>
+      </h1>
+
+      <p class="subhead">
+        Stop wrestling with messy entity data. Normalize, deduplicate,
+        and match company records across systems — in seconds, not sprints.
+      </p>
+
+      <div class="cta-group">
+        <button class="btn-pill btn-primary" onclick="alert('Navigate to /normalization — Start Mapping')">
+          Start Mapping
+          <span class="arrow-circle">
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </button>
+        <button class="btn-pill btn-secondary" onclick="alert('Navigate to /login — Login')">
+          Login
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: particle swirl canvas -->
+    <div class="visual-area">
+      <canvas id="particle-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Stat row -->
+  <div class="stat-row">
+    <div>
+      <div class="stat-val">1,228</div>
+      <div class="stat-label">rows in &lt;1s</div>
+      <div class="stat-brand">CISCO SALES</div>
+    </div>
+    <div>
+      <div class="stat-val">99%</div>
+      <div class="stat-label">accuracy</div>
+      <div class="stat-brand">BENCHMARK</div>
+    </div>
+    <div>
+      <div class="stat-val">40%</div>
+      <div class="stat-label">avg dedup</div>
+      <div class="stat-brand">AMERICAS</div>
+    </div>
+    <div>
+      <div class="stat-val">6</div>
+      <div class="stat-label">data sources</div>
+      <div class="stat-brand">PIPELINE</div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ PARTICLE SWIRL — exact replica from 01-landing.jsx ============ -->
+<script>
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = '·•∙+−|/\\TJ▪▫'.split('');
+  const N = 1400;
+  const points = Array.from({ length: N }, () => {
+    const t = Math.random() * Math.PI * 2;
+    const p = Math.acos(2 * Math.random() - 1);
+    return {
+      t: t,
+      p: p,
+      char: chars[Math.floor(Math.random() * chars.length)],
+      size: 6 + Math.random() * 4,
+    };
+  });
+
+  let angle = 0;
+  let raf;
+
+  function render() {
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    const R = Math.min(w, h) * 0.42;
+
+    angle += 0.0012;
+
+    points.forEach(function(pt) {
+      const x = R * Math.sin(pt.p) * Math.cos(pt.t + angle);
+      const y = R * Math.sin(pt.p) * Math.sin(pt.t + angle * 0.6);
+      const z = R * Math.cos(pt.p);
+      const scale = (z + R * 1.2) / (R * 2.2);
+      ctx.fillStyle = 'rgba(10,10,10,' + (0.25 + scale * 0.55) + ')';
+      ctx.font = (pt.size * scale) + 'px ui-monospace, "JetBrains Mono", monospace';
+      ctx.fillText(pt.char, cx + x, cy + y);
+    });
+
+    raf = requestAnimationFrame(render);
+  }
+
+  render();
+})();
+</script>
+
+</body>
+</html>
