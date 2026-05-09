@@ -20,3 +20,11 @@ Append-only. New entries go at the bottom with date.
 - Removed stale duplicate tree under `Handover/files/` (paths relocated to main `Normalization/` and `Matching_Engine/`).
 
 **Verification:** `npm run build` in `Normalization/Cursor_Build_Norm` succeeds.
+
+---
+
+## 2026-05-09 — Git: v6 pushed, v7 created
+
+**Task:** Publish work on branch `v6`, open `v7` for continued development.
+
+**Solution:** Committed staged changes on `v6`, pushed to `origin/v6`, created branch `v7` from that commit, pushed `origin/v7` and set upstream. README “Last updated” line adjusted to point active work at `v7`.

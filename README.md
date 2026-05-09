@@ -2,7 +2,7 @@
 
 A unified browser-based data suite for CSV normalization and entity matching. One window, one URL, cream editorial theme throughout.
 
-**Last updated:** 2026-05-09 (branch **v6** — workspace UI, configuration order, `brandPalette`; see `LOG.md`).
+**Last updated:** 2026-05-09 (snapshot merged on **v6**; active line of work: branch **v7**. Workspace UI, configuration order, `brandPalette`; details in `LOG.md`).
 
 ---
 
