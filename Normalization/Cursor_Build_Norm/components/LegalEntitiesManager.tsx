@@ -12,7 +12,7 @@ import {
   removeLegalEntity,
   LEGAL_ENTITIES_EVENT,
 } from '@/lib/storage';
-import { cleanPunctuation } from '@/lib/utils';
+import { cleanPunctuation, cn } from '@/lib/utils';
 
 export const LegalEntitiesManager: React.FC = () => {
   const [entities, setEntities] = useState<string[]>([]);
@@ -78,12 +78,12 @@ export const LegalEntitiesManager: React.FC = () => {
     <Card variant="obsidian">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <Building2 className="w-5 h-5 text-electric-cyan" />
-          <CardTitle className="text-sm">Legal Entity & Exclusion List</CardTitle>
+          <Building2 className="w-5 h-5 text-app-text shrink-0" strokeWidth={1.5} />
+          <CardTitle className="text-sm">Exclusion List</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-app-muted">
           Manage suffixes and custom exclusion terms that should be stripped from company names (e.g., LLC, Inc., Corp, HOLDINGS).
         </p>
         
@@ -104,7 +104,7 @@ export const LegalEntitiesManager: React.FC = () => {
         
         {/* Add New Form */}
         <div className="border border-obsidian-border rounded p-3">
-          <h4 className="text-xs font-medium text-gray-300 mb-2">
+          <h4 className="text-xs font-medium text-app-text mb-2">
             Add Legal Entities or Exclusions
           </h4>
           <div className="flex gap-2">
@@ -125,24 +125,25 @@ export const LegalEntitiesManager: React.FC = () => {
               size="sm"
               onClick={handleAdd}
               disabled={!newEntities.trim()}
+              className={cn(newEntities.trim() && 'border-2 border-[#414344]')}
             >
               <Plus className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-[10px] text-gray-600 mt-2">
+          <p className="text-[10px] text-app-muted mt-2">
             Punctuation will be automatically removed
           </p>
         </div>
         
         {/* Entities List */}
         <div>
-          <h4 className="text-xs font-medium text-gray-300 mb-2">
+          <h4 className="text-xs font-medium text-app-text mb-2">
             Current Entries ({entities.length})
           </h4>
           
           {entities.length === 0 ? (
             <div className="text-center py-6 border border-dashed border-obsidian-border rounded">
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-app-muted">
                 No legal entities configured yet
               </p>
             </div>
@@ -151,14 +152,16 @@ export const LegalEntitiesManager: React.FC = () => {
               {entities.map((entity, idx) => (
                 <div
                   key={idx}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-obsidian-hover border border-obsidian-border text-xs"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#F0EFEA] border border-app-border text-xs"
                 >
-                  <span className="font-medium text-gray-300">
+                  <span className="font-medium text-app-text">
                     {entity}
                   </span>
                   <button
                     onClick={() => handleRemove(entity)}
-                    className="text-gray-600 hover:text-neon-red transition-colors"
+                    className="text-app-muted hover:text-[#e3241b] transition-colors"
+                    type="button"
+                    aria-label={`Remove ${entity}`}
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -170,8 +173,8 @@ export const LegalEntitiesManager: React.FC = () => {
         
         {/* Default Entities Info */}
         <div className="border-t border-obsidian-border pt-3">
-          <p className="text-[10px] text-gray-600">
-            <strong className="text-gray-500">Default entries:</strong> LLC, INC, CORPORATION, CORP, LTD, LIMITED, CO, COMPANY, LLP, LP, PLC, SA, GMBH, AG
+          <p className="text-[10px] text-app-muted">
+            <strong className="text-app-text">Default entries:</strong> LLC, INC, CORPORATION, CORP, LTD, LIMITED, CO, COMPANY, LLP, LP, PLC, SA, GMBH, AG
           </p>
         </div>
       </CardContent>

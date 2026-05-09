@@ -10,6 +10,7 @@ import { BarChart as BarChartIcon, Activity, Hash, Type, Mail, Phone, Globe, Map
 import { motion } from 'framer-motion';
 import { Select } from './ui/Select';
 import { profileColumn } from '@/lib/dataProcessing';
+import { BRAND_PALETTE, getSpotlightBarFills } from '@/lib/brandPalette';
 import {
   ResponsiveContainer,
   BarChart,
@@ -43,21 +44,22 @@ interface StatsPanelProps {
 }
 
 const getColumnIcon = (type: ColumnInfo['type']) => {
+  const iconClass = 'w-3 h-3 text-app-muted shrink-0';
   switch (type) {
     case 'email':
-      return <Mail className="w-3 h-3 text-blue-400" />;
+      return <Mail className={iconClass} strokeWidth={1.5} />;
     case 'phone':
-      return <Phone className="w-3 h-3 text-green-400" />;
+      return <Phone className={iconClass} strokeWidth={1.5} />;
     case 'website':
-      return <Globe className="w-3 h-3 text-orange-400" />;
+      return <Globe className={iconClass} strokeWidth={1.5} />;
     case 'address':
-      return <MapPin className="w-3 h-3 text-red-400" />;
+      return <MapPin className={iconClass} strokeWidth={1.5} />;
     case 'document_link':
-      return <FileText className="w-3 h-3 text-pink-400" />;
+      return <FileText className={iconClass} strokeWidth={1.5} />;
     case 'text':
-      return <Type className="w-3 h-3 text-gray-400" />;
+      return <Type className={iconClass} strokeWidth={1.5} />;
     default:
-      return <Hash className="w-3 h-3 text-gray-500" />;
+      return <Hash className={iconClass} strokeWidth={1.5} />;
   }
 };
 
@@ -86,13 +88,13 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
   }, [fileData]);
 
   const typeColorMap: Record<string, string> = {
-    text: 'bg-indigo-500',
-    email: 'bg-cyan-400',
-    phone: 'bg-purple-400',
-    website: 'bg-orange-400',
-    address: 'bg-rose-400',
-    document_link: 'bg-pink-400',
-    other: 'bg-slate-400',
+    text: 'bg-[#080D44]',
+    email: 'bg-[#74bf4b]',
+    phone: 'bg-[#414344]',
+    website: 'bg-[#0f1a6e]',
+    address: 'bg-[#5a5c5d]',
+    document_link: 'bg-[#e3241b]',
+    other: 'bg-[#8a8c8d]',
   };
 
   const columnTypeDistribution = useMemo(() => {
@@ -133,11 +135,12 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
 
   const spotlightChartData = useMemo(() => {
     if (!spotlightProfile) return [];
+    const fills = getSpotlightBarFills();
     return spotlightProfile.topValues.slice(0, 8).map((item, index) => ({
       name: item.value && item.value.length > 18 ? `${item.value.slice(0, 18)}…` : item.value || '(blank)',
       fullValue: item.value || '(blank)',
       count: item.count,
-      fill: `hsl(${210 + index * 16}, 70%, 55%)`,
+      fill: fills[index % fills.length],
     }));
   }, [spotlightProfile]);
 
@@ -147,9 +150,9 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
   if (!fileData) {
     return (
       <div className="h-full flex items-center justify-center p-8 border-2 border-dashed border-obsidian-border rounded-xl bg-obsidian-layer1">
-        <div className="text-center text-gray-500">
-          <BarChartIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">Waiting for Data</p>
+        <div className="text-center text-app-muted">
+          <BarChartIcon className="w-12 h-12 mx-auto mb-4 opacity-40 text-app-text" strokeWidth={1.25} />
+          <p className="text-lg font-medium text-app-text">Waiting for Data</p>
           <p className="text-sm">Upload a CSV to view analysis</p>
         </div>
       </div>
@@ -165,29 +168,29 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
         <Card variant="obsidian">
           <CardHeader>
              <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-electric-cyan" />
+                <Activity className="w-5 h-5 text-app-text" strokeWidth={1.5} />
                 <CardTitle className="text-sm">Live Stats</CardTitle>
              </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded bg-electric-cyan/10 border border-electric-cyan/20">
-                <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Total Rows</p>
-                <p className="text-xl font-bold text-white font-mono">
+              <div className="p-3 rounded bg-obsidian-layer2 border border-app-border">
+                <p className="text-[10px] uppercase tracking-wide text-app-muted mb-1">Total Rows</p>
+                <p className="text-xl font-bold text-app-text font-mono">
                   {fileData.data.length.toLocaleString()}
                 </p>
               </div>
               <div 
-                className="p-3 rounded bg-electric-purple/10 border border-electric-purple/20 cursor-pointer hover:border-electric-purple/50 transition-colors group"
+                className="p-3 rounded bg-obsidian-layer2 border border-app-border cursor-pointer hover:border-app-border-hover transition-colors group"
                 onClick={onColumnProfilerOpen}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Columns</p>
+                  <p className="text-[10px] uppercase tracking-wide text-app-muted mb-1">Columns</p>
                   {onColumnProfilerOpen && (
-                    <ChevronRight className="w-3 h-3 text-gray-600 group-hover:text-electric-purple transition-colors" />
+                    <ChevronRight className="w-3 h-3 text-app-muted group-hover:text-app-text transition-colors" strokeWidth={1.5} />
                   )}
                 </div>
-                <p className="text-xl font-bold text-white font-mono">
+                <p className="text-xl font-bold text-app-text font-mono">
                   {fileData.headers.length}
                 </p>
               </div>
@@ -197,13 +200,13 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
             {columnTypeDistribution.length > 0 && (
               <div className="mt-4 pt-4 border-t border-obsidian-border">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500">Column Type Distribution</p>
+                  <p className="text-[10px] uppercase tracking-wide text-app-muted">Column Type Distribution</p>
                   {onColumnProfilerOpen && (
                     <button
                       onClick={onColumnProfilerOpen}
-                      className="text-[10px] text-electric-cyan hover:text-electric-cyan-dark transition-colors flex items-center gap-1"
+                      className="text-[10px] text-app-text hover:text-app-accent-hover transition-colors flex items-center gap-1"
                     >
-                      View All <ChevronRight className="w-3 h-3" />
+                      View All <ChevronRight className="w-3 h-3" strokeWidth={1.5} />
                     </button>
                   )}
                 </div>
@@ -223,10 +226,13 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
                         transition={{ delay: idx * 0.05 }}
                         type="button"
                       >
-                        <div className="w-28 text-[11px] uppercase tracking-wide text-gray-500">
+                        <div className="w-28 text-[11px] uppercase tracking-wide text-app-muted">
                           {item.label}
                         </div>
-                        <div className="flex-1 h-2 rounded-full bg-obsidian-hover overflow-hidden">
+                        <div
+                          className="flex-1 h-2 rounded-full overflow-hidden"
+                          style={{ backgroundColor: BRAND_PALETTE.lightGray }}
+                        >
                           <span
                             className={clsx(
                               'block h-full transition-all duration-500 rounded-full',
@@ -235,7 +241,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
                             style={{ width: `${Math.max(widthPercent, 6)}%` }}
                           />
                         </div>
-                        <span className="text-xs font-mono text-gray-400 w-8 text-right">
+                        <span className="text-xs font-mono text-app-text w-8 text-right">
                           {item.count}
                         </span>
                       </motion.button>
@@ -255,7 +261,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <CardTitle className="text-sm">Top Values Spotlight</CardTitle>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-app-muted">
                   Visualize the most frequent values for any column.
                 </p>
               </div>
@@ -274,13 +280,18 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
             {spotlightChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={spotlightChartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
-                  <XAxis type="number" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal
+                    vertical={false}
+                    stroke={BRAND_PALETTE.lightGray}
+                  />
+                  <XAxis type="number" tick={{ fill: BRAND_PALETTE.darkGray, fontSize: 11 }} />
                   <YAxis
                     dataKey="name"
                     type="category"
                     width={140}
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: 11, fill: BRAND_PALETTE.darkGray }}
                   />
                   <Tooltip
                     formatter={(value: number, _name, { payload }) => [
@@ -288,10 +299,10 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
                       payload?.fullValue || '',
                     ]}
                     contentStyle={{
-                      backgroundColor: 'rgba(15,23,42,0.95)',
+                      backgroundColor: '#FFFFFF',
                       borderRadius: 8,
-                      border: '1px solid rgba(148,163,184,0.4)',
-                      color: '#f8fafc',
+                      border: `1px solid ${BRAND_PALETTE.lightGray}`,
+                      color: BRAND_PALETTE.darkBlue,
                     }}
                   />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]}>
@@ -302,7 +313,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+              <div className="h-full flex items-center justify-center text-sm text-app-muted">
                 Not enough data to chart this column yet.
               </div>
             )}

@@ -169,28 +169,28 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-              <Bookmark className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <div className="p-2 rounded-lg bg-app-active-bg border border-app-border">
+              <Bookmark className="w-5 h-5 text-app-text" strokeWidth={1.5} />
             </div>
             <div>
               <CardTitle className="text-base">Saved Configurations</CardTitle>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-app-muted dark:text-gray-400">
                 {savedConfigs.length} saved • Save & share with your team
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              type="button"
+              className="inline-flex shrink-0 items-center justify-center gap-1 h-8 px-3 rounded-full text-[11px] font-medium bg-[#0A0A0A] text-white hover:bg-[#1a1a1a] transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsSaveModalOpen(true);
               }}
             >
-              <Save className="w-4 h-4 mr-1" />
+              <Save className="w-3.5 h-3.5" strokeWidth={2} />
               Save Current
-            </Button>
+            </button>
             {isExpanded ? (
               <ChevronDown className="w-5 h-5 text-gray-500" />
             ) : (
@@ -277,7 +277,7 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                       key={config.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="p-3 rounded-lg border border-light-border dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 hover:border-accent-blue dark:hover:border-accent-cyan transition-colors"
+                      className="p-3 rounded-lg border border-light-border dark:border-dark-border bg-gray-50 dark:bg-gray-800/50 hover:border-app-text/30 dark:hover:border-gray-500 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -310,7 +310,7 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleLoad(config)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                            className="text-app-text hover:bg-app-hover"
                           >
                             <FolderOpen className="w-4 h-4" />
                           </Button>

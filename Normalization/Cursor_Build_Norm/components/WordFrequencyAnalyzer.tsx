@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Switch } from './ui/Switch';
@@ -9,6 +9,7 @@ import { Filter, Download, ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { WordFrequency } from '@/lib/types';
 import { calculateWordFrequency, exportWordFrequencyToCSV } from '@/lib/dataProcessing';
 import { CSVRow } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface WordFrequencyAnalyzerProps {
   data: CSVRow[];
@@ -34,7 +35,35 @@ export const WordFrequencyAnalyzer: React.FC<WordFrequencyAnalyzerProps> = ({
   const [frequencies, setFrequencies] = useState<WordFrequency[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [showTopN, setShowTopN] = useState(50);
+  const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+  const columnMenuRef = useRef<HTMLDivElement>(null);
   const normalizedExclusions = existingExclusions.map(entry => entry.toUpperCase());
+
+  useEffect(() => {
+    if (!columnMenuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(e.target as Node)) {
+        setColumnMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [columnMenuOpen]);
+
+  const toggleAnalysisColumn = (column: string) => {
+    if (selectedColumns.includes(column)) {
+      onColumnSelectionChange(selectedColumns.filter((c) => c !== column));
+    } else {
+      onColumnSelectionChange([...selectedColumns, column]);
+    }
+  };
+
+  const columnSummary =
+    selectedColumns.length === 0
+      ? 'Select columns…'
+      : selectedColumns.length === 1
+        ? selectedColumns[0]
+        : `${selectedColumns.length} columns selected`;
   
   useEffect(() => {
     if (data.length > 0 && selectedColumns.length > 0) {
@@ -60,13 +89,6 @@ export const WordFrequencyAnalyzer: React.FC<WordFrequencyAnalyzerProps> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-  
-  const handleColumnToggle = (column: string) => {
-    const newSelected = selectedColumns.includes(column)
-      ? selectedColumns.filter(c => c !== column)
-      : [...selectedColumns, column];
-    onColumnSelectionChange(newSelected);
   };
   
   return (
@@ -120,27 +142,56 @@ export const WordFrequencyAnalyzer: React.FC<WordFrequencyAnalyzerProps> = ({
               />
             </div>
             
-            <div>
+            <div ref={columnMenuRef} className="relative">
               <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Select Columns for Analysis
               </p>
-              <div className="flex flex-wrap gap-2">
-                {columns.map((column) => (
-                  <button
-                    key={column}
-                    onClick={() => handleColumnToggle(column)}
-                    className={`
-                      px-3 py-1.5 rounded-full text-sm font-medium transition-colors
-                      ${selectedColumns.includes(column)
-                        ? 'bg-accent-blue dark:bg-accent-cyan text-white'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }
-                    `}
-                  >
-                    {column}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                id="wf-analysis-columns-trigger"
+                aria-expanded={columnMenuOpen}
+                aria-haspopup="listbox"
+                onClick={() => setColumnMenuOpen((o) => !o)}
+                className={cn(
+                  'w-full flex items-center justify-between gap-2 rounded-lg border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-left text-gray-900 dark:text-gray-100',
+                  'hover:border-app-border-hover dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-app-text/20 dark:focus:ring-gray-500'
+                )}
+              >
+                <span className="truncate min-w-0">{columnSummary}</span>
+                <ChevronDown
+                  className={cn(
+                    'w-4 h-4 shrink-0 text-gray-500 transition-transform',
+                    columnMenuOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+              {columnMenuOpen && (
+                <ul
+                  role="listbox"
+                  aria-multiselectable="true"
+                  className="absolute z-30 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg py-1 shadow-md"
+                >
+                  {columns.map((column) => {
+                    const selected = selectedColumns.includes(column);
+                    return (
+                      <li key={column} role="option" aria-selected={selected}>
+                        <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80">
+                          <input
+                            type="checkbox"
+                            className="rounded border-light-border dark:border-dark-border text-app-text focus:ring-app-text"
+                            checked={selected}
+                            onChange={() => toggleAnalysisColumn(column)}
+                          />
+                          <span className="truncate text-gray-900 dark:text-gray-100">{column}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+                Open the list and check one or more columns.
+              </p>
             </div>
           </div>
           
@@ -182,7 +233,11 @@ export const WordFrequencyAnalyzer: React.FC<WordFrequencyAnalyzerProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-light-border dark:divide-dark-border">
-                    {frequencies.slice(0, showTopN).map((freq, index) => (
+                    {frequencies.slice(0, showTopN).map((freq, index) => {
+                      const canAdd =
+                        !!onAddToExclusion &&
+                        !normalizedExclusions.includes(freq.word.toUpperCase());
+                      return (
                       <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
                           {index + 1}
@@ -198,17 +253,19 @@ export const WordFrequencyAnalyzer: React.FC<WordFrequencyAnalyzerProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={() => onAddToExclusion?.(freq.word)}
-                            disabled={
-                              !onAddToExclusion ||
-                              normalizedExclusions.includes(freq.word.toUpperCase())
-                            }
+                            disabled={!canAdd}
+                            className={cn(
+                              canAdd &&
+                                'border-[#414344] text-gray-800 dark:text-gray-100 hover:border-electric-cyan hover:text-electric-cyan'
+                            )}
                           >
                             <Plus className="w-3.5 h-3.5 mr-1" />
                             Add
                           </Button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

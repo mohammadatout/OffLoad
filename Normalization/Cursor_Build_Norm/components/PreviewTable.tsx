@@ -75,16 +75,16 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
       <CardHeader>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
-            <Table className="w-5 h-5 text-electric-cyan" />
+            <Table className="w-5 h-5 text-app-text" strokeWidth={1.5} />
             <CardTitle>{title}</CardTitle>
-            <span className="text-xs text-gray-500 font-normal font-mono">
+            <span className="text-xs text-app-muted font-normal font-mono">
               Showing {previewRows.length} of {data.length.toLocaleString()} rows
             </span>
           </div>
           {onCompanyNameColumnChange && (
             <div className="flex flex-col gap-2 w-full lg:w-auto">
               <div>
-                <p className="text-xs font-medium text-amber-400 tracking-wide">
+                <p className="text-xs font-medium text-[#74bf4b] tracking-wide">
                   Select the master field for entity/company name
                 </p>
               </div>
@@ -101,7 +101,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={onSuggestedCompanyColumnApply}
-                    className="whitespace-nowrap pulse-highlight"
+                    className="whitespace-nowrap pulse-highlight hover:!border-[#080D44] hover:!text-[#060a33]"
                   >
                     Use suggested ({suggestedCompanyColumn})
                   </Button>
@@ -124,7 +124,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                     <th
                       key={header}
                       className={`px-4 py-3 font-medium text-xs uppercase tracking-wide border-r border-obsidian-border last:border-r-0 transition-colors ${
-                        isExcluded ? 'bg-obsidian-hover text-gray-600' : 'text-gray-400'
+                        isExcluded ? 'bg-obsidian-hover text-app-muted' : 'text-app-muted'
                       }`}
                     >
                       <AnimatePresence mode="wait">
@@ -170,8 +170,8 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                                 onClick={() => onColumnExcludeToggle(header)}
                                 className={`p-0.5 rounded transition-colors ${
                                   isExcluded 
-                                    ? 'text-gray-600 hover:text-gray-400' 
-                                    : 'text-electric-cyan hover:text-electric-cyan-dark'
+                                    ? 'text-app-muted hover:text-app-text' 
+                                    : 'text-app-text hover:text-app-accent-hover'
                                 }`}
                                 title={isExcluded ? 'Include in output' : 'Exclude from output'}
                               >
@@ -179,8 +179,8 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                               </button>
                             )}
                             <span 
-                              className={`truncate cursor-pointer hover:text-electric-cyan transition-colors ${
-                                columnRenames[header] ? 'text-electric-purple' : ''
+                              className={`truncate cursor-pointer hover:text-app-text transition-colors ${
+                                columnRenames[header] ? 'text-app-text underline decoration-app-border underline-offset-2' : 'text-app-text'
                               }`}
                               onClick={() => onColumnRename && handleStartEdit(header)}
                               title={onColumnRename ? 'Click to rename' : undefined}
@@ -212,7 +212,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                       <td
                         key={`${index}-${header}`}
                         className={`px-4 py-2 text-xs whitespace-nowrap max-w-[200px] truncate border-r border-obsidian-border last:border-r-0 font-mono ${
-                          isExcluded ? 'text-gray-600' : 'text-gray-300'
+                          isExcluded ? 'text-app-muted' : 'text-app-text'
                         }`}
                         title={String(row[header] || '')}
                       >
@@ -228,7 +228,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
         
         {/* Legend */}
         {(onColumnRename || onColumnExcludeToggle) && (
-          <div className="px-4 py-2 border-t border-obsidian-border bg-obsidian-layer1 flex items-center gap-4 text-[10px] text-gray-600">
+          <div className="px-4 py-2 border-t border-obsidian-border bg-obsidian-layer1 flex items-center gap-4 text-[10px] text-app-muted">
             {onColumnRename && (
               <span className="flex items-center gap-1">
                 <Pencil className="w-2.5 h-2.5" />

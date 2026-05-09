@@ -5,18 +5,20 @@ import { AccordionItem } from './ui/Accordion';
 import { Switch } from './ui/Switch';
 import { Select } from './ui/Select';
 import { Button } from './ui/Button';
-import { 
-  Settings, 
-  Sparkles, 
-  MapPin, 
-  FileText, 
-  Files, 
-  CheckCircle, 
-  XCircle,
+import {
+  Settings,
+  RemoveFormatting,
+  MapPin,
+  CheckCircle,
   Phone,
   Globe,
-  SplitSquareHorizontal,
+  Brackets,
+  Layers2,
+  BookOpen,
 } from 'lucide-react';
+
+import { AbbreviationManager } from './AbbreviationManager';
+import { LegalEntitiesManager } from './LegalEntitiesManager';
 import { ProcessingConfig } from '@/lib/types';
 
 interface ConfigurationPanelProps {
@@ -44,10 +46,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     cleaning: true,
     parsing: false,
-    dataTypes: false,
-    validation: false,
-    mapping: false,
     dedupe: false,
+    dictionaries: false,
+    validation: false,
+    dataTypes: false,
   });
 
   const toggleSection = (section: string) => {
@@ -84,8 +86,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   return (
     <div id="configuration" className="space-y-4">
       <div className="flex items-center gap-3 mb-6">
-        <Settings className="w-6 h-6 text-accent-blue dark:text-accent-cyan" />
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <Settings className="w-6 h-6 text-app-text" strokeWidth={1.5} />
+        <h2 className="text-2xl font-bold text-app-text dark:text-gray-100">
           Configuration
         </h2>
       </div>
@@ -93,7 +95,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* 1. Cleaning & Normalization */}
       <AccordionItem
         title="Cleaning & Normalization"
-        icon={<Sparkles className="w-5 h-5 text-accent-blue" />}
+        icon={<RemoveFormatting className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.cleaning}
         onToggle={() => toggleSection('cleaning')}
       >
@@ -212,14 +214,14 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                             className={`
                                 flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
                                 ${config.selectedColumns.includes(col) 
-                                    ? 'bg-accent-blue/10 text-accent-blue dark:text-accent-cyan' 
-                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                    ? 'bg-app-active-bg text-app-text' 
+                                    : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
                                 }
                             `}
                             onClick={() => toggleColumn(col, config.selectedColumns, 'selectedColumns')}
                         >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.selectedColumns.includes(col) ? 'bg-accent-blue border-accent-blue' : 'border-gray-300 dark:border-gray-600'}`}>
-                                {config.selectedColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" />}
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.selectedColumns.includes(col) ? 'bg-app-text border-app-text' : 'border-app-border dark:border-gray-600'}`}>
+                                {config.selectedColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" strokeWidth={2} />}
                             </div>
                             <span className="truncate">{col}</span>
                         </div>
@@ -233,7 +235,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       {/* 2. Parsing */}
       <AccordionItem
         title="Parsing"
-        icon={<SplitSquareHorizontal className="w-5 h-5 text-indigo-500" />}
+        icon={<Brackets className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.parsing}
         onToggle={() => toggleSection('parsing')}
       >
@@ -272,16 +274,16 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                           className={`
                             flex items-center gap-2 px-3 py-2 rounded cursor-pointer text-sm transition-colors
                             ${config.addressColumns.includes(col)
-                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700'
-                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'}
+                              ? 'bg-app-active-bg text-app-text border border-app-border'
+                              : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800 border border-transparent'}
                           `}
                           onClick={() => toggleColumn(col, config.addressColumns, 'addressColumns')}
                         >
                           <div
                             className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                               config.addressColumns.includes(col)
-                                ? 'bg-indigo-600 border-indigo-600'
-                                : 'border-gray-300 dark:border-gray-600'
+                                ? 'bg-app-text border-app-text'
+                                : 'border-app-border dark:border-gray-600'
                             }`}
                           >
                             {config.addressColumns.includes(col) && (
@@ -301,7 +303,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                       <input
                         value={config.addressDelimiter}
                         onChange={(e) => onConfigChange({ addressDelimiter: e.target.value })}
-                        className="flex-1 rounded-lg border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-blue dark:focus:ring-accent-cyan focus:border-transparent"
+                        className="flex-1 rounded-lg border border-light-border dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-app-text/20 dark:focus:ring-gray-500 focus:border-transparent"
                         placeholder=", "
                       />
                       <div className="flex gap-1">
@@ -331,145 +333,72 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         </div>
       </AccordionItem>
 
-      {/* 2.5 Phone, Website & Document Processing */}
+      {/* 3. Deduplication Strategy */}
       <AccordionItem
-        title="Phone, Website & Links"
-        icon={<Phone className="w-5 h-5 text-purple-500" />}
-        isOpen={openSections.dataTypes}
-        onToggle={() => toggleSection('dataTypes')}
+        title="Deduplication Strategy"
+        icon={<Layers2 className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
+        isOpen={openSections.dedupe}
+        onToggle={() => toggleSection('dedupe')}
       >
-        <div className="space-y-6">
-          {/* Phone Normalization */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  Phone Number Normalization
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Standardize phone numbers to a consistent format
-                </p>
-              </div>
-              <Switch
-                checked={config.phoneNormalizationEnabled}
-                onCheckedChange={(checked) => onConfigChange({ phoneNormalizationEnabled: checked })}
-              />
+         <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Define unique keys for deduplication. Rows with identical values in these columns will be merged.
+              If empty, deduplication will use the Company Name column if enabled.
+              <br />
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Deduplication only impacts the <strong>Clean Build</strong> export. The Original vs Clean audit file always stays row-by-row.
+              </span>
+            </p>
+            
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border border-light-border dark:border-dark-border rounded-lg">
+                {availableColumns.map((col) => (
+                    <div 
+                        key={`dup-${col}`} 
+                        className={`
+                            flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                            ${config.duplicateDetectionColumns.includes(col) 
+                                ? 'bg-app-active-bg text-app-text' 
+                                : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
+                            }
+                        `}
+                        onClick={() => toggleColumn(col, config.duplicateDetectionColumns, 'duplicateDetectionColumns')}
+                    >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.duplicateDetectionColumns.includes(col) ? 'bg-app-text border-app-text' : 'border-app-border dark:border-gray-600'}`}>
+                            {config.duplicateDetectionColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" strokeWidth={2} />}
+                        </div>
+                        <span className="truncate">{col}</span>
+                    </div>
+                ))}
             </div>
             
-            {config.phoneNormalizationEnabled && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Format
-                  </label>
-                  <Select
-                    value={config.phoneFormat}
-                    onChange={(e) => onConfigChange({ phoneFormat: e.target.value as any })}
-                    options={[
-                      { value: 'NATIONAL', label: '(202) 555-1234' },
-                      { value: 'E164', label: '+12025551234' },
-                      { value: 'INTERNATIONAL', label: '+1 (202) 555-1234' },
-                      { value: 'DOTS', label: '202.555.1234' },
-                      { value: 'DASHES', label: '202-555-1234' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Columns
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                    {availableColumns.map((col) => (
-                      <div
-                        key={`phone-${col}`}
-                        className={`
-                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                          ${config.phoneColumns?.includes(col)
-                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }
-                        `}
-                        onClick={() => toggleColumn(col, config.phoneColumns || [], 'phoneColumns')}
-                      >
-                        <Phone className="w-3 h-3" />
-                        <span className="truncate">{col}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
-          
-          {/* Website Normalization */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  Website/URL Normalization
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Strip protocol (http/https), www, and path - keep domain only
-                </p>
-              </div>
-              <Switch
-                checked={config.websiteNormalizationEnabled}
-                onCheckedChange={(checked) => onConfigChange({ websiteNormalizationEnabled: checked })}
-              />
-            </div>
-            
-            {config.websiteNormalizationEnabled && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Extract Domain
+            {config.duplicateDetectionColumns.length > 0 && (
+                <div className="p-3 bg-app-warn-bg rounded-lg border border-app-warn-border">
+                    <p className="text-xs text-app-text">
+                        <strong>Strategy:</strong> Rows will be grouped by <em>{config.duplicateDetectionColumns.join(' + ')}</em>. 
+                        Conflicting values in other columns will be merged (concatenated).
                     </p>
-                    <p className="text-xs text-gray-500">
-                      Create a separate column with just the domain name
-                    </p>
-                  </div>
-                  <Switch
-                    checked={config.extractDomain}
-                    onCheckedChange={(checked) => onConfigChange({ extractDomain: checked })}
-                  />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Website Columns
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                    {availableColumns.map((col) => (
-                      <div
-                        key={`web-${col}`}
-                        className={`
-                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                          ${config.websiteColumns?.includes(col)
-                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }
-                        `}
-                        onClick={() => toggleColumn(col, config.websiteColumns || [], 'websiteColumns')}
-                      >
-                        <Globe className="w-3 h-3" />
-                        <span className="truncate">{col}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             )}
-          </div>
-          
-          </div>
+         </div>
       </AccordionItem>
 
-      {/* 3. City & State Validation */}
+      {/* 4. Dictionaries & Lists */}
+      <AccordionItem
+        title="Dictionaries & Lists"
+        icon={<BookOpen className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
+        isOpen={openSections.dictionaries}
+        onToggle={() => toggleSection('dictionaries')}
+      >
+        <div className="space-y-4 pt-2">
+          <AbbreviationManager />
+          <LegalEntitiesManager />
+        </div>
+      </AccordionItem>
+
+      {/* 5. City & State Validation */}
       <AccordionItem
         title="City & State Validation"
-        icon={<MapPin className="w-5 h-5 text-cyan-500" />}
+        icon={<MapPin className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.validation}
         onToggle={() => toggleSection('validation')}
       >
@@ -530,54 +459,140 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           )}
         </div>
       </AccordionItem>
-      
-      {/* Deduplication Strategy */}
+
+      {/* 6. Phone, Website & Links */}
       <AccordionItem
-        title="Deduplication Strategy"
-        icon={<Files className="w-5 h-5 text-orange-500" />}
-        isOpen={openSections.dedupe}
-        onToggle={() => toggleSection('dedupe')}
+        title="Phone, Website & Links"
+        icon={<Phone className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
+        isOpen={openSections.dataTypes}
+        onToggle={() => toggleSection('dataTypes')}
       >
-         <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Define unique keys for deduplication. Rows with identical values in these columns will be merged.
-              If empty, deduplication will use the Company Name column if enabled.
-              <br />
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Deduplication only impacts the <strong>Clean Build</strong> export. The Original vs Clean audit file always stays row-by-row.
-              </span>
-            </p>
-            
-            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border border-light-border dark:border-dark-border rounded-lg">
-                {availableColumns.map((col) => (
-                    <div 
-                        key={`dup-${col}`} 
-                        className={`
-                            flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                            ${config.duplicateDetectionColumns.includes(col) 
-                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' 
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                            }
-                        `}
-                        onClick={() => toggleColumn(col, config.duplicateDetectionColumns, 'duplicateDetectionColumns')}
-                    >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.duplicateDetectionColumns.includes(col) ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                            {config.duplicateDetectionColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className="truncate">{col}</span>
-                    </div>
-                ))}
+        <div className="space-y-6">
+          {/* Phone Normalization */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Phone Number Normalization
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Standardize phone numbers to a consistent format
+                </p>
+              </div>
+              <Switch
+                checked={config.phoneNormalizationEnabled}
+                onCheckedChange={(checked) => onConfigChange({ phoneNormalizationEnabled: checked })}
+              />
             </div>
             
-            {config.duplicateDetectionColumns.length > 0 && (
-                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-100 dark:border-orange-900/30">
-                    <p className="text-xs text-orange-800 dark:text-orange-300">
-                        <strong>Strategy:</strong> Rows will be grouped by <em>{config.duplicateDetectionColumns.join(' + ')}</em>. 
-                        Conflicting values in other columns will be merged (concatenated).
-                    </p>
+            {config.phoneNormalizationEnabled && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Format
+                  </label>
+                  <Select
+                    value={config.phoneFormat}
+                    onChange={(e) => onConfigChange({ phoneFormat: e.target.value as any })}
+                    options={[
+                      { value: 'NATIONAL', label: '(202) 555-1234' },
+                      { value: 'E164', label: '+12025551234' },
+                      { value: 'INTERNATIONAL', label: '+1 (202) 555-1234' },
+                      { value: 'DOTS', label: '202.555.1234' },
+                      { value: 'DASHES', label: '202-555-1234' },
+                    ]}
+                  />
                 </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Columns
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {availableColumns.map((col) => (
+                      <div
+                        key={`phone-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.phoneColumns?.includes(col)
+                            ? 'bg-app-active-bg text-app-text'
+                            : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.phoneColumns || [], 'phoneColumns')}
+                      >
+                        <Phone className="w-3 h-3 text-app-muted" strokeWidth={1.5} />
+                        <span className="truncate">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
-         </div>
+          </div>
+          
+          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+          
+          {/* Website Normalization */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Website/URL Normalization
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Strip protocol (http/https), www, and path - keep domain only
+                </p>
+              </div>
+              <Switch
+                checked={config.websiteNormalizationEnabled}
+                onCheckedChange={(checked) => onConfigChange({ websiteNormalizationEnabled: checked })}
+              />
+            </div>
+            
+            {config.websiteNormalizationEnabled && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Extract Domain
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Create a separate column with just the domain name
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.extractDomain}
+                    onCheckedChange={(checked) => onConfigChange({ extractDomain: checked })}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Website Columns
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {availableColumns.map((col) => (
+                      <div
+                        key={`web-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.websiteColumns?.includes(col)
+                            ? 'bg-app-active-bg text-app-text'
+                            : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.websiteColumns || [], 'websiteColumns')}
+                      >
+                        <Globe className="w-3 h-3 text-app-muted" strokeWidth={1.5} />
+                        <span className="truncate">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          </div>
       </AccordionItem>
 
     </div>

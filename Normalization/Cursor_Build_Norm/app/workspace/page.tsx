@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { ConfigurationPanel } from '@/components/ConfigurationPanel';
-import { AbbreviationManager } from '@/components/AbbreviationManager';
-import { LegalEntitiesManager } from '@/components/LegalEntitiesManager';
 import { ResultsDisplay } from '@/components/ResultsDisplay';
 import { StatsPanel } from '@/components/StatsPanel';
 import { PreviewTable } from '@/components/PreviewTable';
@@ -15,11 +13,9 @@ import { ProcessingProgressBar } from '@/components/ProcessingProgressBar';
 import { DataQualityScoreCard } from '@/components/DataQualityScoreCard';
 import { ConfigurationManager } from '@/components/ConfigurationManager';
 import { BatchFileUpload } from '@/components/BatchFileUpload';
-import { AccordionItem } from '@/components/ui/Accordion';
 import {
   RefreshCw,
   XCircle,
-  BookOpen,
   Zap,
   Settings2,
   CheckCircle2,
@@ -123,7 +119,6 @@ export default function Home() {
     excludeStopwords: false,
   });
 
-  const [dictionariesOpen, setDictionariesOpen] = useState(false);
   const [isConfigVisibleOnResults, setIsConfigVisibleOnResults] = useState(true);
   const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null);
   const [showColumnProfiler, setShowColumnProfiler] = useState(false);
@@ -694,18 +689,6 @@ export default function Home() {
                   showReferenceUploader={config.cityStateValidationEnabled}
                 />
 
-                <AccordionItem
-                  title="Dictionaries & Lists"
-                  icon={<BookOpen className="w-4 h-4 text-app-accent" />}
-                  isOpen={dictionariesOpen}
-                  onToggle={() => setDictionariesOpen(!dictionariesOpen)}
-                >
-                  <div className="space-y-4 pt-2">
-                    <AbbreviationManager />
-                    <LegalEntitiesManager />
-                  </div>
-                </AccordionItem>
-
                 <ConfigurationManager
                   currentConfig={config}
                   onLoadConfiguration={handleLoadConfiguration}
@@ -744,21 +727,21 @@ export default function Home() {
                 {/* Company column warning */}
                 {isCompanyColumnMissing && (
                   <div className="callout-warn">
-                    <AlertCircle className="w-4 h-4 text-app-warn mt-0.5 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-white mt-0.5 shrink-0" />
                     <div className="flex-1">
-                      <div className="text-[12px] text-app-text">
+                      <div className="text-[12px] text-white">
                         Select the <span className="font-medium">main entity field</span> to enable processing.
                       </div>
                       {suggestedCompanyColumn && !isCompanySuggestionAcknowledged && (
-                        <div className="text-[11px] text-app-muted mt-0.5">
-                          We suggest <span className="font-mono text-app-warn">{suggestedCompanyColumn}</span>.
+                        <div className="text-[11px] text-white/85 mt-0.5">
+                          We suggest <span className="font-mono text-[#74bf4b]">{suggestedCompanyColumn}</span>.
                         </div>
                       )}
                     </div>
                     {suggestedCompanyColumn && !isCompanySuggestionAcknowledged && (
                       <button
                         onClick={() => handleCompanyFieldSelection(suggestedCompanyColumn)}
-                        className="text-[11px] text-app-warn hover:underline shrink-0"
+                        className="text-[11px] text-[#74bf4b] hover:underline shrink-0"
                       >
                         Use suggestion →
                       </button>

@@ -2,6 +2,8 @@
 
 A unified browser-based data suite for CSV normalization and entity matching. One window, one URL, cream editorial theme throughout.
 
+**Last updated:** 2026-05-09 (branch **v6** — workspace UI, configuration order, `brandPalette`; see `LOG.md`).
+
 ---
 
 ## Chapter 1 — Functionality and Features
@@ -24,8 +26,9 @@ Both tools live inside a single Next.js app at `http://localhost:3000`. Switch b
 - City & state validation against reference data
 - Phone, email, and website normalization
 - Duplicate detection and grouping
-- Word frequency analysis and column profiling
-- Data quality scoring
+- Word frequency analysis and column profiling (dropdown multi-select for analysis columns)
+- Data quality scoring (shared palette for score bands and spotlight charts)
+- Exclusion list management for legal-entity stripping (readable chips and labels)
 - Export cleaned CSV + original-vs-cleaned audit file
 
 ### Matching Engine
@@ -68,6 +71,7 @@ Enterprise entity resolution — matching internal company/organization lists ag
 | Charts | Recharts |
 | CSV parsing | PapaParse |
 | Design | Cream editorial theme (`#F4F3EE` / `#0A0A0A` / Inter + JetBrains Mono) |
+| Theme tokens | `lib/brandPalette.ts` — quality score colors, spotlight bar fills |
 
 ### Backend (port 8000)
 

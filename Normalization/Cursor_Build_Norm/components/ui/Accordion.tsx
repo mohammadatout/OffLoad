@@ -27,14 +27,16 @@ export const AccordionItem: React.FC<AccordionItemProps> = ({
         className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
       >
         <div className="flex items-center gap-3">
-          {icon && <span className="text-gray-500 dark:text-gray-400">{icon}</span>}
-          <span className="font-medium text-gray-900 dark:text-gray-100">{title}</span>
+          {icon && (
+            <span className="flex shrink-0 text-app-text [&_svg]:text-app-text">{icon}</span>
+          )}
+          <span className="font-medium text-app-text dark:text-gray-100">{title}</span>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <ChevronDown className="w-5 h-5 text-app-muted dark:text-gray-400" strokeWidth={1.5} />
         </motion.div>
       </button>
       

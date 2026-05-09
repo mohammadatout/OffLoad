@@ -59,8 +59,8 @@ export default function AppShell({ children }: AppShellProps) {
             <span className="font-mono">—</span>
             <span style={{ color: '#E5E3DC' }}>|</span>
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#0A0A0A' }} />
-              <span className="font-mono">Ready</span>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#74bf4b' }} />
+              <span className="font-mono" style={{ color: '#74bf4b' }}>Ready</span>
             </span>
           </div>
         </div>
