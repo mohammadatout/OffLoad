@@ -597,7 +597,7 @@ export default function Home() {
   ].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden h-[calc(100vh-48px)]">
       {/* Step Indicator */}
       <div className="border-b border-app-border bg-app-bg flex-shrink-0">
         <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-2 flex items-center justify-between">
@@ -640,27 +640,29 @@ export default function Home() {
       </div>
 
       {/* Main Body */}
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-3">
+      <main className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-3 flex-1 flex flex-col min-h-0 w-full">
           {/* Upload View */}
           {viewMode === 'upload' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <FileUpload
-                onFileUploaded={handleFileUploaded}
-                showBatchMode={showBatchMode}
-                onBatchModeChange={setShowBatchMode}
-              />
-            </motion.div>
+            <div className="overflow-y-auto flex-1">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <FileUpload
+                  onFileUploaded={handleFileUploaded}
+                  showBatchMode={showBatchMode}
+                  onBatchModeChange={setShowBatchMode}
+                />
+              </motion.div>
+            </div>
           )}
 
           {/* Setup View — two-column layout */}
           {viewMode === 'setup' && fileData && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-[268px_1fr] gap-phi-3">
+              className="grid grid-cols-1 lg:grid-cols-[268px_1fr] gap-phi-3 flex-1 min-h-0 h-full">
 
               {/* Left: Config Panel */}
-              <aside className="space-y-phi-1 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
-                <div className="flex items-center justify-between mb-phi-2">
+              <aside className="space-y-phi-1 overflow-y-auto h-full pr-1 flex flex-col">
+                <div className="flex items-center justify-between mb-phi-2 shrink-0">
                   <h2 className="text-[11px] font-mono uppercase tracking-wider text-app-muted">
                     Configuration
                   </h2>
@@ -669,38 +671,40 @@ export default function Home() {
                   </span>
                 </div>
 
-                <ConfigurationPanel
-                  compact
-                  config={config}
-                  onConfigChange={handleConfigChange}
-                  availableColumns={derivedColumns}
-                  renames={config.columnRenames}
-                  onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
-                  referenceUploadSlot={
-                    config.cityStateValidationEnabled ? (
-                      <ReferenceFileUpload
-                        onReferenceFileUploaded={handleReferenceFileUploaded}
-                        onReferenceFileCleared={handleReferenceFileCleared}
-                        existingFileInfo={referenceFileInfo}
-                        existingMapping={referenceMapping}
-                        isRequired={config.cityStateValidationEnabled}
-                      />
-                    ) : null
-                  }
-                  referenceUploadMissing={isReferenceFileMissing}
-                  showReferenceUploader={config.cityStateValidationEnabled}
-                />
+                <div className="flex-1 overflow-y-auto space-y-phi-1 pr-1 pb-4">
+                  <ConfigurationPanel
+                    compact
+                    config={config}
+                    onConfigChange={handleConfigChange}
+                    availableColumns={derivedColumns}
+                    renames={config.columnRenames}
+                    onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
+                    referenceUploadSlot={
+                      config.cityStateValidationEnabled ? (
+                        <ReferenceFileUpload
+                          onReferenceFileUploaded={handleReferenceFileUploaded}
+                          onReferenceFileCleared={handleReferenceFileCleared}
+                          existingFileInfo={referenceFileInfo}
+                          existingMapping={referenceMapping}
+                          isRequired={config.cityStateValidationEnabled}
+                        />
+                      ) : null
+                    }
+                    referenceUploadMissing={isReferenceFileMissing}
+                    showReferenceUploader={config.cityStateValidationEnabled}
+                  />
 
-                <ConfigurationManager
-                  currentConfig={config}
-                  onLoadConfiguration={handleLoadConfiguration}
-                />
+                  <ConfigurationManager
+                    currentConfig={config}
+                    onLoadConfiguration={handleLoadConfiguration}
+                  />
+                </div>
 
                 {/* Run button */}
                 <button
                   onClick={isProcessing ? handleCancelProcessing : handleStartProcessing}
                   disabled={!isProcessing && (!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing || isReferenceFileMissing)}
-                  className={`btn-accent mt-phi-2 ${isProcessing ? '!bg-red-500 hover:!bg-red-600' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`btn-accent mt-phi-2 shrink-0 ${isProcessing ? '!bg-red-500 hover:!bg-red-600' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isProcessing ? (
                     <><XCircle className="w-3.5 h-3.5" /> Cancel</>
@@ -711,7 +715,7 @@ export default function Home() {
               </aside>
 
               {/* Right: Work Area */}
-              <section className="space-y-phi-2 overflow-y-auto max-h-[calc(100vh-160px)]">
+              <section className="space-y-phi-2 overflow-y-auto h-full pr-1 pb-4">
                 {/* Processing Error */}
                 {processingError && (
                   <div className="flex items-start gap-phi-2 px-phi-2 py-phi-2 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[12px]">
@@ -836,24 +840,26 @@ export default function Home() {
 
           {/* Results View */}
           {viewMode === 'results' && processingStats && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-phi-3">
-              {/* Export panel at top of results */}
-              <ExportPanel
-                customFilename={customFilename}
-                onFilenameChange={setCustomFilename}
-                onExportClean={() => handleExport({ enhanced: true, comparison: false })}
-                onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
-                isProcessing={isProcessing}
-                hasResults={processedData.length > 0}
-              />
+            <div className="overflow-y-auto flex-1 h-full w-full pr-1 pb-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-phi-3">
+                {/* Export panel at top of results */}
+                <ExportPanel
+                  customFilename={customFilename}
+                  onFilenameChange={setCustomFilename}
+                  onExportClean={() => handleExport({ enhanced: true, comparison: false })}
+                  onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
+                  isProcessing={isProcessing}
+                  hasResults={processedData.length > 0}
+                />
 
-              <ResultsDisplay
-                stats={processingStats}
-                originalData={fileData?.data || []}
-                processedData={processedData}
-                cumulativeStats={cumulativeStats}
-              />
-            </motion.div>
+                <ResultsDisplay
+                  stats={processingStats}
+                  originalData={fileData?.data || []}
+                  processedData={processedData}
+                  cumulativeStats={cumulativeStats}
+                />
+              </motion.div>
+            </div>
           )}
         </div>
       </main>

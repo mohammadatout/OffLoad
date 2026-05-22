@@ -76,12 +76,12 @@ export default function MatchingPage() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-[calc(100vh-48px)] overflow-hidden">
       {/* Left rail - config */}
       <MatchingConfigPanel config={config} onConfigChange={updateConfig} />
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto h-full pr-1 pb-4">
         <div className="max-w-[1100px] mx-auto px-phi-3 py-phi-3">
 
           {/* Upload view */}

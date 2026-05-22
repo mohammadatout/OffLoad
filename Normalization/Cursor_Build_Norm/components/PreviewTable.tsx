@@ -124,8 +124,8 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full text-sm text-left table-fixed border-collapse">
             <thead className="bg-obsidian-layer1 border-y border-obsidian-border">
               <tr>
                 {headers.map((header) => {
@@ -135,7 +135,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                   return (
                     <th
                       key={header}
-                      className={`px-4 py-3 font-medium text-xs uppercase tracking-wide border-r border-obsidian-border last:border-r-0 transition-colors ${
+                      className={`px-4 py-3 font-medium text-xs uppercase tracking-wide border-r border-obsidian-border last:border-r-0 transition-colors min-w-[160px] max-w-xs ${
                         isExcluded ? 'bg-obsidian-hover text-app-muted' : 'text-app-muted'
                       }`}
                     >
@@ -223,7 +223,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                     return (
                       <td
                         key={`${index}-${header}`}
-                        className={`px-4 py-2 text-xs whitespace-nowrap max-w-[200px] truncate border-r border-obsidian-border last:border-r-0 font-mono ${
+                        className={`px-4 py-2.5 text-xs whitespace-nowrap min-w-[160px] max-w-xs overflow-hidden text-ellipsis border-r border-obsidian-border last:border-r-0 font-mono ${
                           isExcluded ? 'text-app-muted' : 'text-app-text'
                         }`}
                         title={String(row[header] || '')}
