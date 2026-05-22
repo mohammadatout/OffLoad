@@ -11,6 +11,7 @@ import { ReferenceFileUpload } from '@/components/ReferenceFileUpload';
 import { ColumnProfiler } from '@/components/ColumnProfiler';
 import { ProcessingProgressBar } from '@/components/ProcessingProgressBar';
 import { DataQualityScoreCard } from '@/components/DataQualityScoreCard';
+import { TopValuesSpotlight } from '@/components/TopValuesSpotlight';
 import { ConfigurationManager } from '@/components/ConfigurationManager';
 import { BatchFileUpload } from '@/components/BatchFileUpload';
 import {
@@ -599,7 +600,7 @@ export default function Home() {
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Step Indicator */}
       <div className="border-b border-app-border bg-app-bg flex-shrink-0">
-        <div className="max-w-[1440px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-2 flex items-center justify-between">
           <div className="step-indicator">
             {steps.map((s, i) => (
               <React.Fragment key={s.n}>
@@ -615,7 +616,7 @@ export default function Home() {
               </React.Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-phi-2">
             {viewMode !== 'upload' && (
               <button
                 onClick={handleReset}
@@ -640,7 +641,7 @@ export default function Home() {
 
       {/* Main Body */}
       <main className="flex-1 overflow-auto">
-        <div className="max-w-[1440px] mx-auto px-6 py-6">
+        <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-3">
           {/* Upload View */}
           {viewMode === 'upload' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -655,11 +656,11 @@ export default function Home() {
           {/* Setup View — two-column layout */}
           {viewMode === 'setup' && fileData && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
+              className="grid grid-cols-1 lg:grid-cols-[268px_1fr] gap-phi-3">
 
               {/* Left: Config Panel */}
-              <aside className="space-y-2 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
-                <div className="flex items-center justify-between mb-3">
+              <aside className="space-y-phi-1 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
+                <div className="flex items-center justify-between mb-phi-2">
                   <h2 className="text-[11px] font-mono uppercase tracking-wider text-app-muted">
                     Configuration
                   </h2>
@@ -669,6 +670,7 @@ export default function Home() {
                 </div>
 
                 <ConfigurationPanel
+                  compact
                   config={config}
                   onConfigChange={handleConfigChange}
                   availableColumns={derivedColumns}
@@ -698,7 +700,7 @@ export default function Home() {
                 <button
                   onClick={isProcessing ? handleCancelProcessing : handleStartProcessing}
                   disabled={!isProcessing && (!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing || isReferenceFileMissing)}
-                  className={`btn-accent mt-4 ${isProcessing ? '!bg-red-500 hover:!bg-red-600' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`btn-accent mt-phi-2 ${isProcessing ? '!bg-red-500 hover:!bg-red-600' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isProcessing ? (
                     <><XCircle className="w-3.5 h-3.5" /> Cancel</>
@@ -709,10 +711,10 @@ export default function Home() {
               </aside>
 
               {/* Right: Work Area */}
-              <section className="space-y-4 overflow-y-auto max-h-[calc(100vh-160px)]">
+              <section className="space-y-phi-2 overflow-y-auto max-h-[calc(100vh-160px)]">
                 {/* Processing Error */}
                 {processingError && (
-                  <div className="flex items-start gap-3 px-4 py-3 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[12px]">
+                  <div className="flex items-start gap-phi-2 px-phi-2 py-phi-2 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[12px]">
                     <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>{processingError}</span>
                   </div>
@@ -749,12 +751,16 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Quality + Preview */}
-                <DataQualityScoreCard
-                  data={fileData.data}
-                  headers={fileData.headers}
-                  config={config}
-                />
+                {/* Quality + Top values (compact row) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-phi-2 items-stretch">
+                  <DataQualityScoreCard
+                    compact
+                    data={fileData.data}
+                    headers={fileData.headers}
+                    config={config}
+                  />
+                  <TopValuesSpotlight data={fileData.data} headers={fileData.headers} />
+                </div>
 
                 {showBatchMode && (
                   <BatchFileUpload
@@ -783,11 +789,16 @@ export default function Home() {
                   onColumnRename={handleColumnRename}
                   excludedColumns={excludedColumns}
                   onColumnExcludeToggle={handleColumnExcludeToggle}
+                  onOpenColumnProfiler={() => {
+                    setSelectedProfileColumn(
+                      config.companyNameColumn || fileData.headers[0] || ''
+                    );
+                    setShowColumnProfiler(true);
+                  }}
                 />
 
                 <StatsPanel
                   fileData={fileData}
-                  processedData={processedData}
                   stats={processingStats}
                   wordFrequencyConfig={{
                     columns: derivedColumns,
@@ -800,8 +811,6 @@ export default function Home() {
                     onExcludeStopwordsChange: (exclude) => handleConfigChange({ excludeStopwords: exclude }),
                     onAddToExclusion: handleAddWordToExclusion
                   }}
-                  onColumnProfilerOpen={() => setShowColumnProfiler(true)}
-                  onColumnSelect={setSelectedProfileColumn}
                 />
 
                 {/* Export panel */}
@@ -817,7 +826,7 @@ export default function Home() {
                 )}
 
                 {/* Footer hint */}
-                <div className="text-[11px] text-app-subtle flex items-center gap-2 pb-4">
+                <div className="text-[11px] text-app-subtle flex items-center gap-phi-1 pb-phi-2">
                   <Circle className="w-2 h-2 fill-current" />
                   Configuration auto-saves. Click <span className="font-mono text-app-muted">Run Normalization</span> when ready.
                 </div>
@@ -827,7 +836,7 @@ export default function Home() {
 
           {/* Results View */}
           {viewMode === 'results' && processingStats && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-phi-3">
               {/* Export panel at top of results */}
               <ExportPanel
                 customFilename={customFilename}

@@ -21,6 +21,8 @@ interface PreviewTableProps {
   onColumnRename?: (originalName: string, newName: string) => void;
   excludedColumns?: string[];
   onColumnExcludeToggle?: (column: string) => void;
+  /** Opens full column profiler (e.g. from workspace) */
+  onOpenColumnProfiler?: () => void;
 }
 
 export const PreviewTable: React.FC<PreviewTableProps> = ({
@@ -35,6 +37,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
   onColumnRename,
   excludedColumns = [],
   onColumnExcludeToggle,
+  onOpenColumnProfiler,
 }) => {
   const [editingColumn, setEditingColumn] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -74,9 +77,18 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
     <Card variant="obsidian">
       <CardHeader>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Table className="w-5 h-5 text-app-text" strokeWidth={1.5} />
             <CardTitle>{title}</CardTitle>
+            {onOpenColumnProfiler && (
+              <button
+                type="button"
+                onClick={onOpenColumnProfiler}
+                className="text-[11px] font-mono text-app-accent hover:underline ml-1"
+              >
+                Column profiler
+              </button>
+            )}
             <span className="text-xs text-app-muted font-normal font-mono">
               Showing {previewRows.length} of {data.length.toLocaleString()} rows
             </span>

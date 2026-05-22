@@ -30,6 +30,8 @@ interface ConfigurationPanelProps {
   referenceUploadSlot?: React.ReactNode;
   referenceUploadMissing?: boolean;
   showReferenceUploader?: boolean;
+  /** Narrow rail: tighter accordion and title */
+  compact?: boolean;
 }
 
 export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
@@ -41,6 +43,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   referenceUploadSlot,
   referenceUploadMissing,
   showReferenceUploader,
+  compact = false,
 }) => {
   // Accordion state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -84,16 +87,26 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   };
 
   return (
-    <div id="configuration" className="space-y-4">
-      <div className="flex items-center gap-3 mb-6">
-        <Settings className="w-6 h-6 text-app-text" strokeWidth={1.5} />
-        <h2 className="text-2xl font-bold text-app-text dark:text-gray-100">
+    <div id="configuration" className={compact ? 'space-y-2' : 'space-y-4'}>
+      <div className={`flex items-center ${compact ? 'gap-2 mb-3' : 'gap-3 mb-6'}`}>
+        <Settings
+          className={`text-app-text ${compact ? 'w-5 h-5' : 'w-6 h-6'}`}
+          strokeWidth={1.5}
+        />
+        <h2
+          className={
+            compact
+              ? 'text-lg font-semibold text-app-text dark:text-gray-100'
+              : 'text-2xl font-bold text-app-text dark:text-gray-100'
+          }
+        >
           Configuration
         </h2>
       </div>
-      
+
       {/* 1. Cleaning & Normalization */}
       <AccordionItem
+        dense={compact}
         title="Cleaning & Normalization"
         icon={<RemoveFormatting className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.cleaning}
@@ -234,6 +247,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       
       {/* 2. Parsing */}
       <AccordionItem
+        dense={compact}
         title="Parsing"
         icon={<Brackets className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.parsing}
@@ -335,6 +349,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
       {/* 3. Deduplication Strategy */}
       <AccordionItem
+        dense={compact}
         title="Deduplication Strategy"
         icon={<Layers2 className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.dedupe}
@@ -384,6 +399,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
       {/* 4. Dictionaries & Lists */}
       <AccordionItem
+        dense={compact}
         title="Dictionaries & Lists"
         icon={<BookOpen className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.dictionaries}
@@ -397,6 +413,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
       {/* 5. City & State Validation */}
       <AccordionItem
+        dense={compact}
         title="City & State Validation"
         icon={<MapPin className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.validation}
@@ -462,6 +479,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
       {/* 6. Phone, Website & Links */}
       <AccordionItem
+        dense={compact}
         title="Phone, Website & Links"
         icon={<Phone className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
         isOpen={openSections.dataTypes}

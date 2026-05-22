@@ -21,18 +21,18 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden"
-         style={{ background: '#F4F3EE', color: '#0A0A0A', fontFamily: "'Inter', system-ui, sans-serif" }}>
+         style={{ background: '#F4F3EE', color: '#080D44', fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Top Bar */}
       <header style={{ borderBottom: '1px solid #E5E3DC', background: 'rgba(244,243,238,0.95)', backdropFilter: 'blur(8px)' }}
               className="sticky top-0 z-50 flex-shrink-0">
-        <div className="max-w-[1440px] mx-auto px-6 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-8">
+        <div className="max-w-[1440px] mx-auto px-phi-3 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-phi-4">
             {/* Brand */}
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-sm flex items-center justify-center" style={{ background: '#0A0A0A' }}>
+            <div className="flex items-center gap-phi-1">
+              <div className="w-5 h-5 rounded-sm flex items-center justify-center" style={{ background: '#080D44' }}>
                 <span className="text-[10px] font-bold" style={{ color: '#F4F3EE' }}>E</span>
               </div>
-              <span className="text-[13px] font-medium tracking-tight" style={{ color: '#0A0A0A' }}>EntityMatch Pro</span>
+              <span className="text-[13px] font-medium tracking-tight" style={{ color: '#080D44' }}>EntityMatch Pro</span>
             </div>
 
             {/* Tab Navigation */}
@@ -41,10 +41,10 @@ export default function AppShell({ children }: AppShellProps) {
                 <button
                   key={tab.id}
                   onClick={() => router.push(tab.href)}
-                  className="px-3 h-7 text-[12px] rounded-md transition-colors flex items-center gap-1.5"
+                  className="px-phi-2 h-7 text-[12px] rounded-md transition-colors flex items-center gap-phi-1"
                   style={{
                     background: activeTab === tab.id ? 'rgba(10,10,10,0.07)' : 'transparent',
-                    color: activeTab === tab.id ? '#0A0A0A' : '#6B6B66',
+                    color: activeTab === tab.id ? '#080D44' : '#6B6B66',
                   }}
                 >
                   {tab.icon}
@@ -55,7 +55,7 @@ export default function AppShell({ children }: AppShellProps) {
           </div>
 
           {/* Context stats */}
-          <div className="flex items-center gap-4 text-[11px]" style={{ color: '#6B6B66' }}>
+          <div className="flex items-center gap-phi-2 text-[11px]" style={{ color: '#6B6B66' }}>
             <span className="font-mono">—</span>
             <span style={{ color: '#E5E3DC' }}>|</span>
             <span className="flex items-center gap-1.5">

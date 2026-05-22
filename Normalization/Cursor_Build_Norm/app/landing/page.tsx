@@ -88,7 +88,7 @@ export default function LandingPage() {
   });
 
   return (
-    <div className="min-h-screen relative" style={{ background: '#F4F3EE', color: '#0A0A0A', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen relative" style={{ background: '#F4F3EE', color: '#080D44', fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Background grid */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
@@ -112,12 +112,12 @@ export default function LandingPage() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <Link href="/workspace" style={{ fontSize: 13, color: '#0A0A0A', textDecoration: 'none', transition: 'color 0.3s' }}>
+          <Link href="/workspace" style={{ fontSize: 13, color: '#080D44', textDecoration: 'none', transition: 'color 0.3s' }}>
             Sign in
           </Link>
           <Link href="/workspace"
             style={{
-              background: '#0A0A0A', color: '#fff', fontSize: 13, fontWeight: 500,
+              background: '#080D44', color: '#fff', fontSize: 13, fontWeight: 500,
               padding: '0 16px', height: 36, borderRadius: 9999, display: 'inline-flex',
               alignItems: 'center', textDecoration: 'none', transition: 'background 0.3s',
             }}>
@@ -133,7 +133,7 @@ export default function LandingPage() {
           <div>
             {/* Eyebrow */}
             <div className="flex items-center gap-3" style={{ marginBottom: 32, ...fadeUp(0.25) }}>
-              <span style={{ width: 32, height: 1, background: '#0A0A0A' }} />
+              <span style={{ width: 32, height: 1, background: '#080D44' }} />
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
                 letterSpacing: '0.15em', textTransform: 'uppercase', color: '#6B6B66',
@@ -159,7 +159,7 @@ export default function LandingPage() {
                 >
                   <path
                     d="M2 8 Q50 2 100 6 T198 5"
-                    stroke="#0A0A0A"
+                    stroke="#080D44"
                     strokeWidth="3"
                     strokeLinecap="round"
                     fill="none"
@@ -187,7 +187,7 @@ export default function LandingPage() {
                   fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
                   border: 'none', cursor: 'pointer', borderRadius: 9999, height: 48,
                   display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: '#0A0A0A', color: '#fff', padding: '0 16px 0 20px',
+                  background: '#080D44', color: '#fff', padding: '0 16px 0 20px',
                   textDecoration: 'none', transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
                 }}>
                 Start Mapping
@@ -205,8 +205,8 @@ export default function LandingPage() {
                   fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
                   cursor: 'pointer', borderRadius: 9999, height: 48,
                   display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: 'transparent', color: '#0A0A0A',
-                  border: '1px solid #0A0A0A', padding: '0 20px',
+                  background: 'transparent', color: '#080D44',
+                  border: '1px solid #080D44', padding: '0 20px',
                   textDecoration: 'none', transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
                 }}>
                 Login

@@ -34,6 +34,13 @@ import {
   SAVED_CONFIGS_EVENT,
 } from '@/lib/storage';
 
+/** Golden ratio φ — Saved Configurations uses a 2-step scale: title = subline × φ */
+const GOLDEN_RATIO = 1.618033988749895;
+const SAVED_CONFIG_SUBLINE_PX = 9;
+const SAVED_CONFIG_TITLE_PX = SAVED_CONFIG_SUBLINE_PX * GOLDEN_RATIO;
+/** CTA label one step above subline for legibility (~6.18% larger than subline) */
+const SAVED_CONFIG_BUTTON_TEXT_PX = Math.round(SAVED_CONFIG_SUBLINE_PX * GOLDEN_RATIO ** 0.25 * 100) / 100;
+
 interface ConfigurationManagerProps {
   currentConfig: ProcessingConfig;
   onLoadConfiguration: (config: ProcessingConfig) => void;
@@ -173,8 +180,16 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
               <Bookmark className="w-5 h-5 text-app-text" strokeWidth={1.5} />
             </div>
             <div>
-              <CardTitle className="text-base">Saved Configurations</CardTitle>
-              <p className="text-xs text-app-muted dark:text-gray-400">
+              <CardTitle
+                className="font-medium leading-snug"
+                style={{ fontSize: `${SAVED_CONFIG_TITLE_PX}px` }}
+              >
+                Saved Configurations
+              </CardTitle>
+              <p
+                className="text-app-muted dark:text-gray-400 leading-snug mt-0.5"
+                style={{ fontSize: `${SAVED_CONFIG_SUBLINE_PX}px` }}
+              >
                 {savedConfigs.length} saved • Save & share with your team
               </p>
             </div>
@@ -182,7 +197,8 @@ export const ConfigurationManager: React.FC<ConfigurationManagerProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="inline-flex shrink-0 items-center justify-center gap-1 h-8 px-3 rounded-full text-[11px] font-medium bg-[#0A0A0A] text-white hover:bg-[#1a1a1a] transition-colors"
+              className="inline-flex shrink-0 items-center justify-center gap-1 h-7 px-2.5 rounded-full font-medium bg-[#080D44] text-white hover:bg-[#0a1258] transition-colors"
+              style={{ fontSize: `${SAVED_CONFIG_BUTTON_TEXT_PX}px` }}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsSaveModalOpen(true);

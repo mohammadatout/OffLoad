@@ -82,13 +82,13 @@ export default function MatchingPage() {
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[1100px] mx-auto px-6 py-6">
+        <div className="max-w-[1100px] mx-auto px-phi-3 py-phi-3">
 
           {/* Upload view */}
           {view === 'upload' && (
             <div className="flex flex-col gap-5">
               <div>
-                <h1 className="text-[16px] font-medium" style={{ color: '#0A0A0A' }}>Entity Matching</h1>
+                <h1 className="text-[16px] font-medium" style={{ color: '#080D44' }}>Entity Matching</h1>
                 <p className="text-[12px] mt-1" style={{ color: '#6B6B66' }}>
                   Upload internal and external CSV files, select entity name columns, then run matching.
                 </p>
@@ -111,7 +111,7 @@ export default function MatchingPage() {
                      style={{ background: '#FDF8E8', border: '1px solid #E5D5A0' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#B8860B' }} />
                   <div>
-                    <p className="text-[11px] font-medium" style={{ color: '#0A0A0A' }}>
+                    <p className="text-[11px] font-medium" style={{ color: '#080D44' }}>
                       State Blocking is ON but external file has no state column
                     </p>
                     <p className="text-[10px] mt-0.5" style={{ color: '#6B6B66' }}>
@@ -125,7 +125,7 @@ export default function MatchingPage() {
                 <div className="flex items-start gap-2 p-3 rounded-md"
                      style={{ background: '#FDF8E8', border: '1px solid #E5D5A0' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#B8860B' }} />
-                  <p className="text-[11px]" style={{ color: '#0A0A0A' }}>{error}</p>
+                  <p className="text-[11px]" style={{ color: '#080D44' }}>{error}</p>
                 </div>
               )}
 
@@ -133,9 +133,9 @@ export default function MatchingPage() {
                 <button
                   onClick={handleRun}
                   disabled={!canRun}
-                  className="h-10 px-6 rounded-full text-[12px] font-medium transition-all"
+                  className="h-10 px-phi-3 rounded-full text-[12px] font-medium transition-all"
                   style={{
-                    background: canRun ? '#0A0A0A' : '#D5D3CC',
+                    background: canRun ? '#080D44' : '#D5D3CC',
                     color: canRun ? '#F4F3EE' : '#6B6B66',
                     cursor: canRun ? 'pointer' : 'not-allowed',
                   }}
@@ -148,13 +148,13 @@ export default function MatchingPage() {
 
           {/* Running view */}
           {view === 'running' && (
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="flex flex-col items-center justify-center py-phi-5 gap-phi-2">
               <div className="w-full max-w-xs">
                 <div className="h-1 rounded-full overflow-hidden" style={{ background: '#E5E3DC' }}>
                   <div
                     className="h-full rounded-full"
                     style={{
-                      background: '#0A0A0A',
+                      background: '#080D44',
                       animation: 'indeterminate 1.5s ease-in-out infinite',
                       width: '40%',
                     }}
@@ -178,7 +178,7 @@ export default function MatchingPage() {
             <div className="flex flex-col gap-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-[16px] font-medium" style={{ color: '#0A0A0A' }}>Results</h1>
+                  <h1 className="text-[16px] font-medium" style={{ color: '#080D44' }}>Results</h1>
                   <p className="text-[12px] mt-0.5" style={{ color: '#6B6B66' }}>
                     {stats.total_matched.toLocaleString()} matched of {stats.total_internal.toLocaleString()} internal entities
                   </p>
@@ -188,7 +188,7 @@ export default function MatchingPage() {
                   <button
                     onClick={handleReset}
                     className="h-10 px-5 rounded-full text-[12px] font-medium transition-colors"
-                    style={{ background: 'transparent', color: '#0A0A0A', border: '1px solid #E5E3DC' }}
+                    style={{ background: 'transparent', color: '#080D44', border: '1px solid #E5E3DC' }}
                   >
                     New Match
                   </button>
