@@ -127,7 +127,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
               )}
             </div>
             {onCompanyNameColumnChange && (
-              <p className="text-xs font-medium text-[#74bf4b] tracking-wide">
+              <p className="text-xs font-medium text-[#e3241b] tracking-wide">
                 Select the master field for entity/company name
               </p>
             )}
@@ -147,9 +147,9 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={onSuggestedCompanyColumnApply}
-                    className="whitespace-nowrap pulse-highlight hover:!border-[#080D44] hover:!text-[#060a33]"
+                    className="whitespace-nowrap pulse-highlight hover:!border-[#c41f17] hover:!text-[#c41f17]"
                   >
-                    Use suggested ({suggestedCompanyColumn})
+                    Confirm master field
                   </Button>
                 )}
               </div>
@@ -313,7 +313,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                     return (
                       <td
                         key={`${index}-${header}`}
-                        className={`whitespace-nowrap border-r border-obsidian-border last:border-r-0 font-mono ${
+                        className={`whitespace-normal break-words align-top border-r border-obsidian-border last:border-r-0 font-mono ${
                           density === 'compact' ? 'px-3 py-2 text-[11px]' : 'px-4 py-2.5 text-xs'
                         } ${
                           isPinned ? 'w-[220px] min-w-[220px] max-w-[220px] sticky z-10' : 'min-w-[200px]'

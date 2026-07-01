@@ -890,19 +890,6 @@ export default function Home() {
                         <div className="text-[12px]" style={{ color: ACCENT_GREEN }}>
                           Select the <span className="font-medium">main entity field</span> to enable processing.
                         </div>
-                        {suggestedCompanyColumn && !isCompanySuggestionAcknowledged && (
-                          <div className="mt-0.5 flex items-center justify-between gap-2">
-                            <div className="text-[11px] text-white/85 truncate">
-                              We suggest <span className="font-mono" style={{ color: ACCENT_GREEN }}>{suggestedCompanyColumn}</span>.
-                            </div>
-                            <button
-                              onClick={() => handleCompanyFieldSelection(suggestedCompanyColumn)}
-                              className="text-[11px] text-white hover:underline shrink-0"
-                            >
-                              Use suggestion →
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
