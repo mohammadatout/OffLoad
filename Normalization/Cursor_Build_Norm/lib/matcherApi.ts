@@ -1,6 +1,6 @@
 import { MatchConfig, MatchResult, MatchStats } from './matchingTypes';
 
-const API_BASE = '/api/matcher';
+const API_BASE = (process.env.NEXT_PUBLIC_MATCHER_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
 export async function checkHealth(): Promise<boolean> {
   try {
