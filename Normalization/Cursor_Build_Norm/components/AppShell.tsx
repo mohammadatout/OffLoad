@@ -26,9 +26,9 @@ export default function AppShell({ children }: AppShellProps) {
       <header style={{ borderBottom: '1px solid #E5E3DC', background: 'rgba(244,243,238,0.95)', backdropFilter: 'blur(8px)' }}
               className="sticky top-0 z-50 flex-shrink-0">
         <div className="max-w-[1440px] mx-auto px-phi-3 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-phi-4">
+          <div className="flex items-center gap-6 min-w-0">
             {/* Brand */}
-            <div className="flex items-center gap-phi-1">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="w-5 h-5 rounded-sm flex items-center justify-center" style={{ background: '#080D44' }}>
                 <span className="text-[10px] font-bold" style={{ color: '#F4F3EE' }}>E</span>
               </div>
@@ -36,12 +36,12 @@ export default function AppShell({ children }: AppShellProps) {
             </div>
 
             {/* Tab Navigation */}
-            <nav className="flex items-center gap-1">
+            <nav className="ml-2 flex items-center gap-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => router.push(tab.href)}
-                  className="px-phi-2 h-7 text-[12px] rounded-md transition-colors flex items-center gap-phi-1"
+                  className="h-8 px-3 text-[12px] rounded-md transition-colors flex items-center gap-2 whitespace-nowrap"
                   style={{
                     background: activeTab === tab.id ? 'rgba(10,10,10,0.07)' : 'transparent',
                     color: activeTab === tab.id ? '#080D44' : '#6B6B66',
@@ -55,7 +55,7 @@ export default function AppShell({ children }: AppShellProps) {
           </div>
 
           {/* Context stats */}
-          <div className="flex items-center gap-phi-2 text-[11px]" style={{ color: '#6B6B66' }}>
+          <div className="flex items-center gap-3 text-[11px] shrink-0" style={{ color: '#6B6B66' }}>
             <span className="font-mono">—</span>
             <span style={{ color: '#E5E3DC' }}>|</span>
             <span className="flex items-center gap-1.5">

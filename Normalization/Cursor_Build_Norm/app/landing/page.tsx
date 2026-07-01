@@ -121,14 +121,14 @@ export default function LandingPage() {
   }, []);
 
   const fadeUp = (delay: number) => ({
-    opacity: mounted ? 1 : 0,
-    transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+    opacity: 1,
+    transform: 'translateY(0)',
     transition: `opacity 0.8s ease-out ${delay}s, transform 0.8s ease-out ${delay}s`,
   });
 
   const fadeDown = (delay: number) => ({
-    opacity: mounted ? 1 : 0,
-    transform: mounted ? 'translateY(0)' : 'translateY(-12px)',
+    opacity: 1,
+    transform: 'translateY(0)',
     transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
   });
 

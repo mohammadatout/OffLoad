@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Input } from './ui/Input';
 import { CSVRow } from '@/lib/types';
@@ -25,6 +25,8 @@ interface PreviewTableProps {
   onOpenColumnProfiler?: () => void;
 }
 
+const PINNED_COLUMN_WIDTH = 220;
+
 export const PreviewTable: React.FC<PreviewTableProps> = ({
   data,
   headers,
@@ -41,8 +43,45 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
 }) => {
   const [editingColumn, setEditingColumn] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [quickSearch, setQuickSearch] = useState('');
+  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
+  const [pinnedColumns, setPinnedColumns] = useState<1 | 2>(2);
 
-  const previewRows = data.slice(0, 5);
+  const previewRows = useMemo(() => data.slice(0, 5), [data]);
+  const normalizedSearch = quickSearch.trim().toLowerCase();
+
+  const getDisplayName = useCallback(
+    (column: string): string => columnRenames[column] || column,
+    [columnRenames]
+  );
+
+  const hasColumnNameMatch = useMemo(() => {
+    if (!normalizedSearch) return false;
+    return headers.some((header) =>
+      getDisplayName(header).toLowerCase().includes(normalizedSearch)
+    );
+  }, [headers, normalizedSearch, getDisplayName]);
+
+  const visibleHeaders = useMemo(() => {
+    if (!normalizedSearch) return headers;
+    return headers.filter((header) => {
+      if (getDisplayName(header).toLowerCase().includes(normalizedSearch)) return true;
+      return previewRows.some((row) =>
+        String(row[header] ?? '').toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [headers, previewRows, normalizedSearch, getDisplayName]);
+
+  const filteredRows = useMemo(() => {
+    if (!normalizedSearch) return previewRows;
+    if (hasColumnNameMatch) return previewRows;
+    return previewRows.filter((row) =>
+      visibleHeaders.some((header) =>
+        String(row[header] ?? '').toLowerCase().includes(normalizedSearch)
+      )
+    );
+  }, [previewRows, visibleHeaders, normalizedSearch, hasColumnNameMatch]);
+
   const companyOptions = [
     { value: '', label: '-- Select Column --' },
     ...headers.map((header) => ({ value: header, label: header })),
@@ -69,10 +108,6 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
     setEditValue('');
   };
 
-  const getDisplayName = (column: string): string => {
-    return columnRenames[column] || column;
-  };
-
   return (
     <Card variant="obsidian">
       <CardHeader>
@@ -90,7 +125,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
               </button>
             )}
             <span className="text-xs text-app-muted font-normal font-mono">
-              Showing {previewRows.length} of {data.length.toLocaleString()} rows
+              Showing {filteredRows.length} of {previewRows.length} preview rows
             </span>
           </div>
           {onCompanyNameColumnChange && (
@@ -122,22 +157,103 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
             </div>
           )}
         </div>
+        <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="w-full lg:max-w-[320px]">
+            <Input
+              value={quickSearch}
+              onChange={(e) => setQuickSearch(e.target.value)}
+              placeholder="Search columns or preview values..."
+              className="h-8 text-[12px] font-mono"
+            />
+          </div>
+          <div className="flex items-center gap-3 text-[11px]">
+            <div className="flex items-center gap-1">
+              <span className="text-app-muted uppercase tracking-wide">Density</span>
+              <button
+                type="button"
+                onClick={() => setDensity('comfortable')}
+                className="h-7 px-2.5 rounded border transition-colors"
+                style={{
+                  borderColor: '#E5E3DC',
+                  background: density === 'comfortable' ? 'rgba(10,10,10,0.07)' : 'transparent',
+                  color: '#080D44',
+                }}
+              >
+                Comfortable
+              </button>
+              <button
+                type="button"
+                onClick={() => setDensity('compact')}
+                className="h-7 px-2.5 rounded border transition-colors"
+                style={{
+                  borderColor: '#E5E3DC',
+                  background: density === 'compact' ? 'rgba(10,10,10,0.07)' : 'transparent',
+                  color: '#080D44',
+                }}
+              >
+                Compact
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-app-muted uppercase tracking-wide">Pinned</span>
+              <button
+                type="button"
+                onClick={() => setPinnedColumns(1)}
+                className="h-7 w-8 rounded border transition-colors"
+                style={{
+                  borderColor: '#E5E3DC',
+                  background: pinnedColumns === 1 ? 'rgba(10,10,10,0.07)' : 'transparent',
+                  color: '#080D44',
+                }}
+              >
+                1
+              </button>
+              <button
+                type="button"
+                onClick={() => setPinnedColumns(2)}
+                className="h-7 w-8 rounded border transition-colors"
+                style={{
+                  borderColor: '#E5E3DC',
+                  background: pinnedColumns === 2 ? 'rgba(10,10,10,0.07)' : 'transparent',
+                  color: '#080D44',
+                }}
+              >
+                2
+              </button>
+            </div>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto scrollbar-thin">
-          <table className="w-full text-sm text-left table-fixed border-collapse">
+          <table className="w-max min-w-full text-sm text-left table-auto border-collapse">
             <thead className="bg-obsidian-layer1 border-y border-obsidian-border">
               <tr>
-                {headers.map((header) => {
+                {visibleHeaders.map((header, columnIndex) => {
                   const isExcluded = excludedColumns.includes(header);
                   const isEditing = editingColumn === header;
+                  const isPinned = columnIndex < pinnedColumns;
+                  const pinnedLeft = columnIndex === 0 ? 0 : PINNED_COLUMN_WIDTH;
                   
                   return (
                     <th
                       key={header}
-                      className={`px-4 py-3 font-medium text-xs uppercase tracking-wide border-r border-obsidian-border last:border-r-0 transition-colors min-w-[160px] max-w-xs ${
+                      className={`font-medium uppercase tracking-wide border-r border-obsidian-border last:border-r-0 transition-colors ${
+                        density === 'compact' ? 'px-3 py-2 text-[10px]' : 'px-4 py-3 text-xs'
+                      } ${
+                        isPinned ? 'w-[220px] min-w-[220px] max-w-[220px] sticky z-20' : 'min-w-[200px]'
+                      } ${
                         isExcluded ? 'bg-obsidian-hover text-app-muted' : 'text-app-muted'
                       }`}
+                      style={
+                        isPinned
+                          ? {
+                              left: pinnedLeft,
+                              background: isExcluded ? '#F0EFEA' : '#FFFFFF',
+                              boxShadow: columnIndex === pinnedColumns - 1 ? '2px 0 0 0 #E5E3DC' : undefined,
+                            }
+                          : undefined
+                      }
                     >
                       <AnimatePresence mode="wait">
                         {isEditing ? (
@@ -191,7 +307,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                               </button>
                             )}
                             <span 
-                              className={`truncate cursor-pointer hover:text-app-text transition-colors ${
+                              className={`cursor-pointer hover:text-app-text transition-colors leading-snug ${
                                 columnRenames[header] ? 'text-app-text underline decoration-app-border underline-offset-2' : 'text-app-text'
                               }`}
                               onClick={() => onColumnRename && handleStartEdit(header)}
@@ -216,17 +332,32 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-obsidian-border">
-              {previewRows.map((row, index) => (
+              {filteredRows.map((row, index) => (
                 <tr key={index} className="hover:bg-obsidian-hover/50 transition-colors">
-                  {headers.map((header) => {
+                  {visibleHeaders.map((header, columnIndex) => {
                     const isExcluded = excludedColumns.includes(header);
+                    const isPinned = columnIndex < pinnedColumns;
+                    const pinnedLeft = columnIndex === 0 ? 0 : PINNED_COLUMN_WIDTH;
                     return (
                       <td
                         key={`${index}-${header}`}
-                        className={`px-4 py-2.5 text-xs whitespace-nowrap min-w-[160px] max-w-xs overflow-hidden text-ellipsis border-r border-obsidian-border last:border-r-0 font-mono ${
+                        className={`whitespace-nowrap border-r border-obsidian-border last:border-r-0 font-mono ${
+                          density === 'compact' ? 'px-3 py-2 text-[11px]' : 'px-4 py-2.5 text-xs'
+                        } ${
+                          isPinned ? 'w-[220px] min-w-[220px] max-w-[220px] sticky z-10' : 'min-w-[200px]'
+                        } ${
                           isExcluded ? 'text-app-muted' : 'text-app-text'
                         }`}
                         title={String(row[header] || '')}
+                        style={
+                          isPinned
+                            ? {
+                                left: pinnedLeft,
+                                background: isExcluded ? '#F7F6F2' : '#FFFFFF',
+                                boxShadow: columnIndex === pinnedColumns - 1 ? '2px 0 0 0 #E5E3DC' : undefined,
+                              }
+                            : undefined
+                        }
                       >
                         {String(row[header] || '')}
                       </td>
@@ -236,6 +367,11 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
               ))}
             </tbody>
           </table>
+          {normalizedSearch && visibleHeaders.length === 0 && (
+            <div className="px-4 py-6 text-[12px] font-mono" style={{ color: '#6B6B66' }}>
+              No columns or values matched your search.
+            </div>
+          )}
         </div>
         
         {/* Legend */}

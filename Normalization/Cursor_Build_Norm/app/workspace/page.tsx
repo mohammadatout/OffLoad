@@ -50,6 +50,9 @@ import {
 import { autoDetectColumns, formatMonthDayTag, validateFilename, getParsedFieldName, toSlugBaseName } from '@/lib/utils';
 
 type ViewMode = 'upload' | 'setup' | 'results';
+const SETUP_SIDEBAR_MIN_WIDTH = 300;
+const SETUP_SIDEBAR_MAX_WIDTH = 560;
+const SETUP_MAIN_MIN_WIDTH = 640;
 
 const deriveDefaultSelectedColumns = (headers: string[]): string[] => {
   const prioritized = headers.filter((header) => {
@@ -126,6 +129,8 @@ export default function Home() {
   const [selectedProfileColumn, setSelectedProfileColumn] = useState<string>('');
   const [showBatchMode, setShowBatchMode] = useState(false);
   const [excludedColumns, setExcludedColumns] = useState<string[]>([]);
+  const [setupSidebarWidth, setSetupSidebarWidth] = useState(360);
+  const setupContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleColumnExcludeToggle = (column: string) => {
     setExcludedColumns(prev =>
@@ -337,6 +342,45 @@ export default function Home() {
       return updated;
     });
   };
+
+  const handleSetupSidebarResizeStart = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      const container = setupContainerRef.current;
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const startX = event.clientX;
+      const startWidth = setupSidebarWidth;
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientX - startX;
+        const maxByViewport = Math.max(
+          SETUP_SIDEBAR_MIN_WIDTH,
+          containerRect.width - SETUP_MAIN_MIN_WIDTH
+        );
+        const next = Math.max(
+          SETUP_SIDEBAR_MIN_WIDTH,
+          Math.min(SETUP_SIDEBAR_MAX_WIDTH, Math.min(maxByViewport, startWidth + delta))
+        );
+        setSetupSidebarWidth(Math.round(next));
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [setupSidebarWidth]
+  );
 
   const handleProgressUpdate = useCallback((progress: ProcessingProgress) => {
     setProcessingProgress(progress);
@@ -658,11 +702,16 @@ export default function Home() {
 
           {/* Setup View — two-column layout */}
           {viewMode === 'setup' && fileData && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-[268px_1fr] gap-phi-3 flex-1 min-h-0 h-full">
+            <motion.div
+              ref={setupContainerRef}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid grid-cols-1 lg:[grid-template-columns:var(--setup-sidebar-width)_minmax(0,1fr)] gap-phi-3 flex-1 min-h-0 h-full"
+              style={{ ['--setup-sidebar-width' as string]: `${setupSidebarWidth}px` }}
+            >
 
               {/* Left: Config Panel */}
-              <aside className="space-y-phi-1 overflow-y-auto h-full pr-1 flex flex-col">
+              <aside className="relative space-y-phi-1 overflow-y-auto h-full pr-1 flex flex-col">
                 <div className="flex items-center justify-between mb-phi-2 shrink-0">
                   <h2 className="text-[11px] font-mono uppercase tracking-wider text-app-muted">
                     Configuration
@@ -712,6 +761,15 @@ export default function Home() {
                   ) : (
                     <><Play className="w-3.5 h-3.5 fill-current" /> Run Normalization</>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="Resize configuration panel"
+                  onMouseDown={handleSetupSidebarResizeStart}
+                  className="hidden lg:flex absolute -right-2 top-0 h-full w-4 cursor-col-resize items-center justify-center z-20 group"
+                >
+                  <span className="h-16 w-[2px] rounded-full bg-[#D5D3CC] group-hover:bg-[#B8860B] transition-colors" />
                 </button>
               </aside>
 
