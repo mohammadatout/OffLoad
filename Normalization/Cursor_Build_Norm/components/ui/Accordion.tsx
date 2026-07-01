@@ -44,7 +44,7 @@ export const AccordionItem: React.FC<AccordionItemProps> = ({
           <span
             className={cn(
               'font-medium text-app-text dark:text-gray-100',
-              dense && 'text-sm'
+              dense && 'text-[12px] tracking-[0.01em]'
             )}
           >
             {title}

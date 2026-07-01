@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MatchConfig, MatchResult, MatchStats, ReviewDecision } from '@/lib/matchingTypes';
 import { runMatching } from '@/lib/matcherApi';
@@ -16,6 +16,14 @@ interface UploadedFile {
 }
 
 type MatchingView = 'upload' | 'running' | 'results';
+
+const hasStateLikeHeader = (headers: string[]): boolean => {
+  return headers.some((header) => {
+    const normalized = header.toLowerCase();
+    if (/street|status/.test(normalized)) return false;
+    return /\bstate\b|\bprovince\b|\bregion\b|\bterritory\b|(^|_)st($|_)/i.test(normalized);
+  });
+};
 
 export default function MatchingPage() {
   const [view, setView] = useState<MatchingView>('upload');
@@ -43,6 +51,40 @@ export default function MatchingPage() {
   }, []);
 
   const canRun = externalFile && internalFile && externalCol && internalCol;
+  const externalHasStateHint = useMemo(
+    () => (externalFile ? hasStateLikeHeader(externalFile.headers) : false),
+    [externalFile]
+  );
+  const internalHasStateHint = useMemo(
+    () => (internalFile ? hasStateLikeHeader(internalFile.headers) : false),
+    [internalFile]
+  );
+
+  const stateBlockingWarning = useMemo(() => {
+    if (!config.use_state_blocking || !externalFile || !internalFile) return null;
+    if (!externalHasStateHint && !internalHasStateHint) {
+      return {
+        title: 'State Blocking is ON but no state-like column was detected in either file',
+        detail:
+          'This usually causes zero matches. Add a state column, or turn off State Blocking before run.',
+      };
+    }
+    if (!externalHasStateHint) {
+      return {
+        title: 'State Blocking is ON but external source appears to have no state column',
+        detail:
+          'Matching quality may collapse to zero. Add state in source data or disable State Blocking.',
+      };
+    }
+    if (!internalHasStateHint) {
+      return {
+        title: 'State Blocking is ON but internal target appears to have no state column',
+        detail:
+          'Matching quality may collapse to zero. Add a state-like target column or disable State Blocking.',
+      };
+    }
+    return null;
+  }, [config.use_state_blocking, externalFile, internalFile, externalHasStateHint, internalHasStateHint]);
 
   async function handleRun() {
     if (!canRun) return;
@@ -87,7 +129,7 @@ export default function MatchingPage() {
 
           {/* Upload view */}
           {view === 'upload' && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 pt-2 lg:pt-8">
               <div>
                 <h1 className="text-[16px] font-medium" style={{ color: '#080D44' }}>Entity Matching</h1>
                 <p className="text-[12px] mt-1" style={{ color: '#6B6B66' }}>
@@ -95,30 +137,40 @@ export default function MatchingPage() {
                 </p>
               </div>
 
-              <MatchingUpload
-                externalFile={externalFile}
-                externalCol={externalCol}
-                onExternalUploaded={setExternalFile}
-                onExternalColChange={setExternalCol}
-                internalFile={internalFile}
-                internalCol={internalCol}
-                onInternalUploaded={setInternalFile}
-                onInternalColChange={setInternalCol}
-              />
+              <div className="pt-1 lg:pt-6">
+                <MatchingUpload
+                  externalFile={externalFile}
+                  externalCol={externalCol}
+                  onExternalUploaded={setExternalFile}
+                  onExternalColChange={setExternalCol}
+                  internalFile={internalFile}
+                  internalCol={internalCol}
+                  onInternalUploaded={setInternalFile}
+                  onInternalColChange={setInternalCol}
+                />
+              </div>
 
-              {/* State blocking warning */}
-              {config.use_state_blocking && internalFile && !internalFile.headers.some(h => /state/i.test(h)) && (
+              {/* State blocking smart warning */}
+              {stateBlockingWarning && (
                 <div className="flex items-start gap-2 p-3 rounded-md"
                      style={{ background: '#FDF8E8', border: '1px solid #E5D5A0' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#B8860B' }} />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-[11px] font-medium" style={{ color: '#080D44' }}>
-                      State Blocking is ON but internal file has no state column
+                      {stateBlockingWarning.title}
                     </p>
                     <p className="text-[10px] mt-0.5" style={{ color: '#6B6B66' }}>
-                      This will likely result in zero matches. Turn off State Blocking in the config panel, or use a file with state information.
+                      {stateBlockingWarning.detail}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => updateConfig({ use_state_blocking: false })}
+                    className="h-7 px-2.5 rounded-full text-[10px] font-medium border border-[#E5D5A0] bg-[#FFF8DC] hover:bg-[#FFF3C2] transition-colors"
+                    style={{ color: '#080D44' }}
+                  >
+                    Turn off
+                  </button>
                 </div>
               )}
 
@@ -134,7 +186,7 @@ export default function MatchingPage() {
                 <button
                   onClick={handleRun}
                   disabled={!canRun}
-                  className="h-10 px-phi-3 rounded-full text-[12px] font-medium transition-all"
+                  className="h-11 px-6 rounded-full text-[13px] font-medium transition-all inline-flex items-center justify-center"
                   style={{
                     background: canRun ? '#080D44' : '#D5D3CC',
                     color: canRun ? '#F4F3EE' : '#6B6B66',

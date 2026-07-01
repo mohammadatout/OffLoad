@@ -15,6 +15,7 @@ import {
   Brackets,
   Layers2,
   BookOpen,
+  Info,
 } from 'lucide-react';
 
 import { AbbreviationManager } from './AbbreviationManager';
@@ -32,7 +33,31 @@ interface ConfigurationPanelProps {
   showReferenceUploader?: boolean;
   /** Narrow rail: tighter accordion and title */
   compact?: boolean;
+  mode?: 'simple' | 'advanced';
+  onModeChange?: (mode: 'simple' | 'advanced') => void;
 }
+
+const InfoHint: React.FC<{ text: string }> = ({ text }) => (
+  <span className="relative inline-flex items-center group">
+    <button
+      type="button"
+      aria-label={text}
+      className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-light-border text-gray-500 hover:text-app-text focus:outline-none focus:ring-2 focus:ring-app-text/20 dark:border-dark-border dark:text-gray-400"
+    >
+      <Info className="w-3 h-3" strokeWidth={1.8} />
+    </button>
+    <span className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 w-64 -translate-x-1/2 rounded-md border border-light-border bg-white px-2.5 py-1.5 text-[11px] leading-snug text-gray-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 dark:border-dark-border dark:bg-dark-card dark:text-gray-200">
+      {text}
+    </span>
+  </span>
+);
+
+const FeatureTitle: React.FC<{ title: string; hint: string }> = ({ title, hint }) => (
+  <div className="flex items-center gap-1.5">
+    <p className="text-[11px] font-medium text-gray-900 dark:text-gray-100">{title}</p>
+    <InfoHint text={hint} />
+  </div>
+);
 
 export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   config,
@@ -44,7 +69,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   referenceUploadMissing,
   showReferenceUploader,
   compact = false,
+  mode = 'advanced',
+  onModeChange,
 }) => {
+  const isSimple = mode === 'simple';
   // Accordion state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     cleaning: true,
@@ -52,7 +80,6 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     dedupe: false,
     dictionaries: false,
     validation: false,
-    dataTypes: false,
   });
 
   const toggleSection = (section: string) => {
@@ -86,22 +113,53 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
     onConfigChange({ [updateField]: [] });
   };
 
+  const suggestColumnsByPattern = (patterns: RegExp[]): string[] => {
+    return availableColumns.filter((col) => patterns.some((pattern) => pattern.test(col)));
+  };
+
   return (
     <div id="configuration" className={compact ? 'space-y-2' : 'space-y-4'}>
-      <div className={`flex items-center ${compact ? 'gap-2 mb-3' : 'gap-3 mb-6'}`}>
-        <Settings
-          className={`text-app-text ${compact ? 'w-5 h-5' : 'w-6 h-6'}`}
-          strokeWidth={1.5}
-        />
-        <h2
-          className={
-            compact
-              ? 'text-lg font-semibold text-app-text dark:text-gray-100'
-              : 'text-2xl font-bold text-app-text dark:text-gray-100'
-          }
-        >
-          Configuration
-        </h2>
+      <div className={`flex items-center justify-between ${compact ? 'mb-3' : 'mb-6'}`}>
+        <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
+          <Settings
+            className={`text-app-text ${compact ? 'w-5 h-5' : 'w-6 h-6'}`}
+            strokeWidth={1.5}
+          />
+          <h2
+            className={
+              compact
+                ? 'text-base font-medium tracking-tight text-app-text dark:text-gray-100'
+                : 'text-2xl font-bold text-app-text dark:text-gray-100'
+            }
+          >
+            Configuration
+          </h2>
+        </div>
+
+        {onModeChange && (
+          <div className="inline-flex items-center rounded-full border border-app-border bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => onModeChange('simple')}
+              className={`h-6 px-2.5 rounded-full text-[10px] font-medium transition-colors ${
+                mode === 'simple' ? 'text-white' : 'text-app-muted hover:text-app-text'
+              }`}
+              style={{ background: mode === 'simple' ? '#74bf4b' : 'transparent' }}
+            >
+              Simple
+            </button>
+            <button
+              type="button"
+              onClick={() => onModeChange('advanced')}
+              className={`h-6 px-2.5 rounded-full text-[10px] font-medium transition-colors ${
+                mode === 'advanced' ? 'text-white' : 'text-app-muted hover:text-app-text'
+              }`}
+              style={{ background: mode === 'advanced' ? '#74bf4b' : 'transparent' }}
+            >
+              Advanced
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 1. Cleaning & Normalization */}
@@ -113,138 +171,216 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         onToggle={() => toggleSection('cleaning')}
       >
         <div className="space-y-6">
-           {/* Text Processing */}
-           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                Text Processing
+          {/* Text Processing */}
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-gray-600 dark:text-gray-300">
+              Text Processing
             </h3>
-            
-            <div className="flex items-center justify-between">
-                <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                    Uppercase Conversion
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Convert text to uppercase (excludes URLs and emails)
-                </p>
-                </div>
-                <Switch
+
+            <div className="flex items-center justify-between gap-3">
+              <FeatureTitle
+                title="Uppercase Conversion"
+                hint="Convert text to uppercase while skipping URL and email values."
+              />
+              <Switch
                 checked={config.uppercaseConversion}
                 onCheckedChange={(checked) => onConfigChange({ uppercaseConversion: checked })}
-                />
+              />
             </div>
-            
-            <div className="flex items-center justify-between">
-                <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                    Normalization & Cleanup
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Remove punctuation and clean up whitespace
-                </p>
-                </div>
-                <Switch
+
+            <div className="flex items-center justify-between gap-3">
+              <FeatureTitle
+                title="Normalization & Cleanup"
+                hint="Normalize spacing and punctuation to create cleaner values."
+              />
+              <Switch
                 checked={config.normalizationCleanup}
                 onCheckedChange={(checked) => onConfigChange({ normalizationCleanup: checked })}
-                />
+              />
             </div>
-           </div>
-           
-           <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+          </div>
 
-           {/* Company Name Cleaning */}
-           <div className="space-y-4">
-             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-                Entity Cleaning
+          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+
+          {/* Phone + Website normalization moved into Cleaning */}
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-gray-600 dark:text-gray-300">
+              Contact Normalization
             </h3>
-            
-            <div className="flex items-center justify-between">
-                <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                    Enable Company Name Cleaning
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Remove legal entities and replace abbreviations
-                </p>
-                </div>
-                <Switch
-                checked={config.companyNameCleaningEnabled}
-                onCheckedChange={(checked) => onConfigChange({ companyNameCleaningEnabled: checked })}
-                />
+
+            <div className="flex items-center justify-between gap-3">
+              <FeatureTitle
+                title="Phone Number Normalization"
+                hint="Standardize phone numbers to one consistent format."
+              />
+              <Switch
+                checked={config.phoneNormalizationEnabled}
+                onCheckedChange={(checked) => {
+                  const autoPhoneCols = suggestColumnsByPattern([
+                    /phone/i,
+                    /tel/i,
+                    /mobile/i,
+                    /fax/i,
+                    /contact/i,
+                  ]);
+                  onConfigChange({
+                    phoneNormalizationEnabled: checked,
+                    phoneColumns: checked && (config.phoneColumns?.length || 0) === 0
+                      ? autoPhoneCols
+                      : config.phoneColumns,
+                  });
+                }}
+              />
             </div>
 
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-                Entity name field selection now lives in the <strong>Input Data Preview</strong> header and becomes available after a file upload.
-            </p>
-            
-            {config.companyNameCleaningEnabled && (
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                    <div className="flex items-center justify-between">
-                        <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                            Remove Legal Entities
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Remove LLC, Inc., Corp., etc.
-                        </p>
-                        </div>
-                        <Switch
-                        checked={config.removeLegalEntities}
-                        onCheckedChange={(checked) => onConfigChange({ removeLegalEntities: checked })}
-                        />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                        <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                            Replace Abbreviations
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Use custom abbreviation rules
-                        </p>
-                        </div>
-                        <Switch
-                        checked={config.replaceAbbreviations}
-                        onCheckedChange={(checked) => onConfigChange({ replaceAbbreviations: checked })}
-                        />
-                    </div>
+            {config.phoneNormalizationEnabled && !isSimple && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Format
+                  </label>
+                  <Select
+                    value={config.phoneFormat}
+                    onChange={(e) => onConfigChange({ phoneFormat: e.target.value as any })}
+                    options={[
+                      { value: 'NATIONAL', label: '(202) 555-1234' },
+                      { value: 'E164', label: '+12025551234' },
+                      { value: 'INTERNATIONAL', label: '+1 (202) 555-1234' },
+                      { value: 'DOTS', label: '202.555.1234' },
+                      { value: 'DASHES', label: '202-555-1234' },
+                    ]}
+                  />
                 </div>
-            )}
-            
-            {/* Columns to Normalize Selection */}
-            <div>
-                <div className="flex items-center justify-between mb-2">
-                    <p className="font-medium text-gray-900 dark:text-gray-100">Columns to Normalize</p>
-                    <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => selectAll('selectedColumns')} className="h-6 text-xs">All</Button>
-                        <Button variant="ghost" size="sm" onClick={() => clearAll('selectedColumns')} className="h-6 text-xs">None</Button>
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-light-border dark:border-dark-border rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Phone Columns
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
                     {availableColumns.map((col) => (
-                        <div 
-                            key={col} 
-                            className={`
-                                flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                                ${config.selectedColumns.includes(col) 
-                                    ? 'bg-app-active-bg text-app-text' 
-                                    : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
-                                }
-                            `}
-                            onClick={() => toggleColumn(col, config.selectedColumns, 'selectedColumns')}
-                        >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.selectedColumns.includes(col) ? 'bg-app-text border-app-text' : 'border-app-border dark:border-gray-600'}`}>
-                                {config.selectedColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" strokeWidth={2} />}
-                            </div>
-                            <span className="truncate">{col}</span>
-                        </div>
+                      <div
+                        key={`phone-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.phoneColumns?.includes(col)
+                            ? 'bg-app-active-bg text-app-text'
+                            : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.phoneColumns || [], 'phoneColumns')}
+                      >
+                        <Phone className="w-3 h-3 text-app-muted" strokeWidth={1.5} />
+                        <span className="truncate">{col}</span>
+                      </div>
                     ))}
+                  </div>
                 </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-3">
+              <FeatureTitle
+                title="Website/URL Normalization"
+                hint="Standardize website values and optionally extract the domain."
+              />
+              <Switch
+                checked={config.websiteNormalizationEnabled}
+                onCheckedChange={(checked) => {
+                  const autoWebsiteCols = suggestColumnsByPattern([
+                    /website/i,
+                    /url/i,
+                    /domain/i,
+                    /web/i,
+                    /link/i,
+                  ]);
+                  onConfigChange({
+                    websiteNormalizationEnabled: checked,
+                    websiteColumns: checked && (config.websiteColumns?.length || 0) === 0
+                      ? autoWebsiteCols
+                      : config.websiteColumns,
+                  });
+                }}
+              />
             </div>
-           </div>
+
+            {config.websiteNormalizationEnabled && !isSimple && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div className="flex items-center justify-between">
+                  <FeatureTitle
+                    title="Extract Domain"
+                    hint="Create an extra field containing only the root domain."
+                  />
+                  <Switch
+                    checked={config.extractDomain}
+                    onCheckedChange={(checked) => onConfigChange({ extractDomain: checked })}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Website Columns
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {availableColumns.map((col) => (
+                      <div
+                        key={`web-${col}`}
+                        className={`
+                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                          ${config.websiteColumns?.includes(col)
+                            ? 'bg-app-active-bg text-app-text'
+                            : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
+                          }
+                        `}
+                        onClick={() => toggleColumn(col, config.websiteColumns || [], 'websiteColumns')}
+                      >
+                        <Globe className="w-3 h-3 text-app-muted" strokeWidth={1.5} />
+                        <span className="truncate">{col}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+
+          {/* Columns to Normalize Selection */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium text-gray-900 dark:text-gray-100">Columns to Normalize</p>
+                <InfoHint text="Pick which columns should receive core normalization rules." />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => selectAll('selectedColumns')} className="h-6 text-xs">All</Button>
+                <Button variant="ghost" size="sm" onClick={() => clearAll('selectedColumns')} className="h-6 text-xs">None</Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-light-border dark:border-dark-border rounded-lg">
+              {availableColumns.map((col) => (
+                <div
+                  key={col}
+                  className={`
+                    flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
+                    ${config.selectedColumns.includes(col)
+                      ? 'bg-app-active-bg text-app-text'
+                      : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
+                    }
+                  `}
+                  onClick={() => toggleColumn(col, config.selectedColumns, 'selectedColumns')}
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${config.selectedColumns.includes(col) ? 'bg-app-text border-app-text' : 'border-app-border dark:border-gray-600'}`}>
+                    {config.selectedColumns.includes(col) && <CheckCircle className="w-3 h-3 text-white" strokeWidth={2} />}
+                  </div>
+                  <span className="truncate">{col}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </AccordionItem>
       
+      {!isSimple && (
+        <>
       {/* 2. Parsing */}
       <AccordionItem
         dense={compact}
@@ -256,14 +392,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         <div className="space-y-6">
             {/* Address Parsing */}
             <div className="flex items-center justify-between">
-                <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                    Parsing
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Parse addresses, compose company + state context, and build Full_Address
-                </p>
-                </div>
+                <FeatureTitle
+                  title="Address Parsing"
+                  hint="Build a parsed address field by combining selected location columns."
+                />
                 <Switch
                 checked={config.addressParsingEnabled}
                 onCheckedChange={(checked) => onConfigChange({ addressParsingEnabled: checked })}
@@ -356,14 +488,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         onToggle={() => toggleSection('dedupe')}
       >
          <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Define unique keys for deduplication. Rows with identical values in these columns will be merged.
-              If empty, deduplication will use the Company Name column if enabled.
-              <br />
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                Deduplication only impacts the <strong>Clean Build</strong> export. The Original vs Clean audit file always stays row-by-row.
-              </span>
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-medium text-gray-900 dark:text-gray-100">Grouping Keys</p>
+              <InfoHint text="Rows sharing the same key values are merged in Clean Build export only. Original vs Clean audit remains row-by-row." />
+            </div>
             
             <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border border-light-border dark:border-dark-border rounded-lg">
                 {availableColumns.map((col) => (
@@ -396,6 +524,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             )}
          </div>
       </AccordionItem>
+      </>
+      )}
 
       {/* 4. Dictionaries & Lists */}
       <AccordionItem
@@ -406,11 +536,66 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
         onToggle={() => toggleSection('dictionaries')}
       >
         <div className="space-y-4 pt-2">
-          <AbbreviationManager />
-          <LegalEntitiesManager />
+          <div className="space-y-4">
+            <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-gray-600 dark:text-gray-300">
+              Entity Normalization
+            </h3>
+
+            <div className="flex items-center justify-between gap-3">
+              <FeatureTitle
+                title="Enable Entity Normalization"
+                hint="Normalize company/entity names using legal-entity cleanup and abbreviation expansion."
+              />
+              <Switch
+                checked={config.companyNameCleaningEnabled}
+                onCheckedChange={(checked) => onConfigChange({ companyNameCleaningEnabled: checked })}
+              />
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Entity field selection stays in <strong>Input Data Preview</strong> for faster setup.
+            </p>
+
+            {config.companyNameCleaningEnabled && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
+                <div className="flex items-center justify-between gap-3">
+                  <FeatureTitle
+                    title="Remove Legal Entities"
+                    hint="Remove common suffixes like LLC, Inc, Corp, Ltd."
+                  />
+                  <Switch
+                    checked={config.removeLegalEntities}
+                    onCheckedChange={(checked) => onConfigChange({ removeLegalEntities: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <FeatureTitle
+                    title="Replace Abbreviations"
+                    hint="Expand configured abbreviations using your dictionary rules."
+                  />
+                  <Switch
+                    checked={config.replaceAbbreviations}
+                    onCheckedChange={(checked) => onConfigChange({ replaceAbbreviations: checked })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!isSimple && (
+            <>
+              <div className="w-full h-px bg-light-border dark:bg-dark-border" />
+
+              <AbbreviationManager />
+              <LegalEntitiesManager />
+            </>
+          )}
         </div>
       </AccordionItem>
 
+      {(!isSimple || config.cityStateValidationEnabled) && (
+      <>
       {/* 5. City & State Validation */}
       <AccordionItem
         dense={compact}
@@ -421,16 +606,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
       >
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-              <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">
-                  City & State Validation
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {config.cityStateValidationEnabled
-                  ? 'Validates against your reference CSV'
-                  : 'Toggle on to enable reference-based validation'}
-              </p>
-              </div>
+              <FeatureTitle
+                title="City & State Validation"
+                hint="Validate uploaded city/state values against your reference file."
+              />
               <Switch
               checked={config.cityStateValidationEnabled}
               onCheckedChange={(checked) => onConfigChange({ cityStateValidationEnabled: checked })}
@@ -476,142 +655,8 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
           )}
         </div>
       </AccordionItem>
-
-      {/* 6. Phone, Website & Links */}
-      <AccordionItem
-        dense={compact}
-        title="Phone, Website & Links"
-        icon={<Phone className="w-5 h-5 text-app-text" strokeWidth={1.5} />}
-        isOpen={openSections.dataTypes}
-        onToggle={() => toggleSection('dataTypes')}
-      >
-        <div className="space-y-6">
-          {/* Phone Normalization */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  Phone Number Normalization
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Standardize phone numbers to a consistent format
-                </p>
-              </div>
-              <Switch
-                checked={config.phoneNormalizationEnabled}
-                onCheckedChange={(checked) => onConfigChange({ phoneNormalizationEnabled: checked })}
-              />
-            </div>
-            
-            {config.phoneNormalizationEnabled && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Format
-                  </label>
-                  <Select
-                    value={config.phoneFormat}
-                    onChange={(e) => onConfigChange({ phoneFormat: e.target.value as any })}
-                    options={[
-                      { value: 'NATIONAL', label: '(202) 555-1234' },
-                      { value: 'E164', label: '+12025551234' },
-                      { value: 'INTERNATIONAL', label: '+1 (202) 555-1234' },
-                      { value: 'DOTS', label: '202.555.1234' },
-                      { value: 'DASHES', label: '202-555-1234' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Phone Columns
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                    {availableColumns.map((col) => (
-                      <div
-                        key={`phone-${col}`}
-                        className={`
-                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                          ${config.phoneColumns?.includes(col)
-                            ? 'bg-app-active-bg text-app-text'
-                            : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
-                          }
-                        `}
-                        onClick={() => toggleColumn(col, config.phoneColumns || [], 'phoneColumns')}
-                      >
-                        <Phone className="w-3 h-3 text-app-muted" strokeWidth={1.5} />
-                        <span className="truncate">{col}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="w-full h-px bg-light-border dark:bg-dark-border" />
-          
-          {/* Website Normalization */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  Website/URL Normalization
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Strip protocol (http/https), www, and path - keep domain only
-                </p>
-              </div>
-              <Switch
-                checked={config.websiteNormalizationEnabled}
-                onCheckedChange={(checked) => onConfigChange({ websiteNormalizationEnabled: checked })}
-              />
-            </div>
-            
-            {config.websiteNormalizationEnabled && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-4 border border-light-border dark:border-dark-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Extract Domain
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Create a separate column with just the domain name
-                    </p>
-                  </div>
-                  <Switch
-                    checked={config.extractDomain}
-                    onCheckedChange={(checked) => onConfigChange({ extractDomain: checked })}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Website Columns
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-                    {availableColumns.map((col) => (
-                      <div
-                        key={`web-${col}`}
-                        className={`
-                          flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-sm
-                          ${config.websiteColumns?.includes(col)
-                            ? 'bg-app-active-bg text-app-text'
-                            : 'text-app-muted dark:text-gray-400 hover:bg-app-hover dark:hover:bg-gray-800'
-                          }
-                        `}
-                        onClick={() => toggleColumn(col, config.websiteColumns || [], 'websiteColumns')}
-                      >
-                        <Globe className="w-3 h-3 text-app-muted" strokeWidth={1.5} />
-                        <span className="truncate">{col}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          </div>
-      </AccordionItem>
+      </>
+      )}
 
     </div>
   );

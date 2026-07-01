@@ -93,9 +93,9 @@ export const TopValuesSpotlight: React.FC<TopValuesSpotlightProps> = ({ data, he
         </div>
       </CardHeader>
 
-      <CardContent className="py-phi-2 flex-1 flex flex-col justify-center min-h-0 space-y-3">
+      <CardContent className="py-phi-1.5 flex-1 flex flex-col min-h-0 space-y-2">
         {topValues.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {topValues.map((item, index) => {
               const fillColor = fills[index % fills.length];
               return (
@@ -122,7 +122,7 @@ export const TopValuesSpotlight: React.FC<TopValuesSpotlightProps> = ({ data, he
             })}
           </div>
         ) : (
-          <div className="text-center py-4 text-[11px] text-app-muted flex flex-col items-center justify-center gap-1">
+          <div className="text-center py-2 text-[11px] text-app-muted flex flex-col items-center justify-center gap-1">
             <HelpCircle className="w-5 h-5 opacity-45" />
             <span>No data available for this column</span>
           </div>

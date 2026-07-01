@@ -99,7 +99,7 @@ const MetricCard: React.FC<{
       transition={{ delay }}
       className={cn(
         'rounded-xl border bg-white dark:bg-dark-card',
-        compact ? 'p-2' : 'p-4'
+        compact ? 'p-1.5' : 'p-4'
       )}
       style={{ borderColor: BRAND_PALETTE.lightGray }}
     >
@@ -155,7 +155,7 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
   const scoreLabel = getScoreLabel(qualityScore.overall);
   const columnsWithIssues = qualityScore.columnScores.filter((c) => c.issues.length > 0);
 
-  const gaugeSize = compact ? 88 : 160;
+  const gaugeSize = compact ? 74 : 160;
   const iconSm = compact ? 'w-3.5 h-3.5' : 'w-4 h-4';
 
   return (
@@ -210,11 +210,11 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
         </div>
       </CardHeader>
       <CardContent
-        className={cn(compact ? 'space-y-3 flex-1 min-h-0' : 'space-y-6', compact && 'py-phi-2')}
+        className={cn(compact ? 'space-y-2.5 flex-1 min-h-0' : 'space-y-6', compact && 'py-phi-1.5')}
       >
         <div
           className={cn(
-            'flex flex-col items-center gap-4',
+            'flex flex-col items-center gap-2.5',
             !compact && 'md:flex-row md:gap-6'
           )}
         >
@@ -224,7 +224,7 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className={cn('font-bold', compact ? 'text-lg mt-0.5' : 'text-2xl mt-2')}
+              className={cn('font-bold', compact ? 'text-base mt-0' : 'text-2xl mt-2')}
               style={{ color: overallColor }}
             >
               {qualityScore.overall}
@@ -335,7 +335,7 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
           <div
             className={cn(
               'grid grid-cols-1 md:grid-cols-2 gap-1.5 overflow-y-auto',
-              compact ? 'max-h-24 lg:grid-cols-2' : 'lg:grid-cols-3 gap-2 max-h-48'
+              compact ? 'max-h-20 lg:grid-cols-2' : 'lg:grid-cols-3 gap-2 max-h-48'
             )}
           >
             {qualityScore.columnScores.map((column) => {

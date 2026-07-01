@@ -26,7 +26,8 @@ export default function MatchingUpload({
   onInternalUploaded, onExternalUploaded, onInternalColChange, onExternalColChange,
 }: MatchingUploadProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="w-full max-w-[860px] mx-auto lg:pt-2">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <UploadCard
         label="External File"
         description="Your source entities to match"
@@ -43,6 +44,7 @@ export default function MatchingUpload({
         onUploaded={onInternalUploaded}
         onColChange={onInternalColChange}
       />
+      </div>
     </div>
   );
 }
@@ -143,7 +145,7 @@ function UploadCard({ label, description, uploaded, selectedCol, onUploaded, onC
       style={{
         background: dragging ? 'rgba(10,10,10,0.03)' : '#fff',
         border: `1px dashed ${dragging ? '#0A0A0A' : '#E5E3DC'}`,
-        minHeight: 140,
+        minHeight: 190,
       }}
     >
       <Upload className="w-5 h-5" style={{ color: '#6B6B66' }} />

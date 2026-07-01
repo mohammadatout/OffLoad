@@ -45,7 +45,7 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
   const [editValue, setEditValue] = useState('');
   const [quickSearch, setQuickSearch] = useState('');
   const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable');
-  const [pinnedColumns, setPinnedColumns] = useState<1 | 2>(2);
+  const pinnedColumns = 1;
 
   const previewRows = useMemo(() => data.slice(0, 5), [data]);
   const normalizedSearch = quickSearch.trim().toLowerCase();
@@ -112,29 +112,28 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
     <Card variant="obsidian">
       <CardHeader>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Table className="w-5 h-5 text-app-text" strokeWidth={1.5} />
-            <CardTitle>{title}</CardTitle>
-            {onOpenColumnProfiler && (
-              <button
-                type="button"
-                onClick={onOpenColumnProfiler}
-                className="text-[11px] font-mono text-app-accent hover:underline ml-1"
-              >
-                Column profiler
-              </button>
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Table className="w-5 h-5 text-app-text" strokeWidth={1.5} />
+              <CardTitle>{title}</CardTitle>
+              {onOpenColumnProfiler && (
+                <button
+                  type="button"
+                  onClick={onOpenColumnProfiler}
+                  className="text-[11px] font-mono text-app-accent hover:underline ml-1"
+                >
+                  Column profiler
+                </button>
+              )}
+            </div>
+            {onCompanyNameColumnChange && (
+              <p className="text-xs font-medium text-[#74bf4b] tracking-wide">
+                Select the master field for entity/company name
+              </p>
             )}
-            <span className="text-xs text-app-muted font-normal font-mono">
-              Showing {filteredRows.length} of {previewRows.length} preview rows
-            </span>
           </div>
           {onCompanyNameColumnChange && (
             <div className="flex flex-col gap-2 w-full lg:w-auto">
-              <div>
-                <p className="text-xs font-medium text-[#74bf4b] tracking-wide">
-                  Select the master field for entity/company name
-                </p>
-              </div>
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
                 <div className="min-w-[220px]">
                   <Select
@@ -192,33 +191,6 @@ export const PreviewTable: React.FC<PreviewTableProps> = ({
                 }}
               >
                 Compact
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-app-muted uppercase tracking-wide">Pinned</span>
-              <button
-                type="button"
-                onClick={() => setPinnedColumns(1)}
-                className="h-7 w-8 rounded border transition-colors"
-                style={{
-                  borderColor: '#E5E3DC',
-                  background: pinnedColumns === 1 ? 'rgba(10,10,10,0.07)' : 'transparent',
-                  color: '#080D44',
-                }}
-              >
-                1
-              </button>
-              <button
-                type="button"
-                onClick={() => setPinnedColumns(2)}
-                className="h-7 w-8 rounded border transition-colors"
-                style={{
-                  borderColor: '#E5E3DC',
-                  background: pinnedColumns === 2 ? 'rgba(10,10,10,0.07)' : 'transparent',
-                  color: '#080D44',
-                }}
-              >
-                2
               </button>
             </div>
           </div>

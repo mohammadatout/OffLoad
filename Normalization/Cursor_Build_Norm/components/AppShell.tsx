@@ -25,7 +25,7 @@ export default function AppShell({ children }: AppShellProps) {
       {/* Top Bar */}
       <header style={{ borderBottom: '1px solid #E5E3DC', background: 'rgba(244,243,238,0.95)', backdropFilter: 'blur(8px)' }}
               className="sticky top-0 z-50 flex-shrink-0">
-        <div className="max-w-[1440px] mx-auto px-phi-3 h-12 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-phi-3 h-12 flex items-center justify-start">
           <div className="flex items-center gap-6 min-w-0">
             {/* Brand */}
             <div className="flex items-center gap-2 shrink-0">
@@ -54,15 +54,6 @@ export default function AppShell({ children }: AppShellProps) {
             </nav>
           </div>
 
-          {/* Context stats */}
-          <div className="flex items-center gap-3 text-[11px] shrink-0" style={{ color: '#6B6B66' }}>
-            <span className="font-mono">—</span>
-            <span style={{ color: '#E5E3DC' }}>|</span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#74bf4b' }} />
-              <span className="font-mono" style={{ color: '#74bf4b' }}>Ready</span>
-            </span>
-          </div>
         </div>
       </header>
 
