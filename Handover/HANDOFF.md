@@ -46,7 +46,8 @@ Handover/
       lib/types.ts
       lib/utils.ts
       lib/storage.ts
-    FrontEnd/cursorrules-editorial-minimalist.md   ← the only design rule
+    Archive/FrontEnd/cursorrules-editorial-minimalist.md
+                                                   ← the only design rule
                                                      that matches reality
 ```
 
@@ -80,7 +81,7 @@ anything. NO EXCEPTIONS, NO MERCY.
   use `#B8860B`.
 - Fonts: Inter sans + JetBrains Mono.
 - No gradients, no shadows, no rounded corners except pill buttons.
-- The full rule is in `files/FrontEnd/cursorrules-editorial-minimalist.md`.
+- The full rule is in `files/Archive/FrontEnd/cursorrules-editorial-minimalist.md`.
 - Ignore any file or stale comment that mentions "Obsidian dark", "cyan
   accent #2DD4BF", or "two-context aesthetic" — those have been archived.
 
