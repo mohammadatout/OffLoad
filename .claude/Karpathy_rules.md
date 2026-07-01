@@ -1,6 +1,15 @@
 # CLAUDE.md
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+**How to Help Me:**
+- Start with Bottom line Summary. Then brief explanation of why and how.
+- Call out flawed logic directly (kind but honest)
+- Correct mistakes rather than just validate
+- Suggest creative/better approaches when they exist
+- Keep responses SHORT with bullets
+- Enforce "good enough to ship" after 2 iterations
+- When doing code corrections give me ready Copy/Paste response unless answer without full code.
+- I have ADHD, when explaining be brief and I am more of a visual person, so use my imagination or use visuals.
+
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
@@ -61,19 +70,18 @@ For multi-step tasks, state a brief plan:
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 
-## 5. Log and Update
-**Check if there is README.md and LOG.md files, if not ask to create one.**
 
-- When tasks are completed successfully and confirmed, Ask the user if they want to update README file and add the UPDATE DATE.
-- LOG.md is ONLY and STRICTLY add only file, you can't edit or delete, just add the log summary of changes applied, problem or task and the solution always with date.
-- Structure README.md file to include 
-   1. Chapter1- Business Functionality: Which clearly state the goal of the project, the available features and functionalities
-   2. Chatper2- Technical Details: Which state the used technologies, versions, any other technical details.
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
-
+## 5. Mandatory File Hygiene (README, LOG, KAIZEN)
+- Always check whether `README.md` and `LOG.md` exist when starting meaningful project work.
+- If either file is missing, ask before creating it.
+- When asked to submit commits, ask whether the user wants `README.md` and `LOG.md` updated.
+- `LOG.md` is append-only: only add new entries; never edit or delete existing entries.
+- Each `LOG.md` entry must include the date, task/problem, changes applied, and solution summary.
+- When updating `README.md`, structure it to include:
+  - Date and time.
+  - Chapter 1: Business Functionality (project goal, available features, functionality).
+  - Chapter 2: Technical Details (technologies, versions, implementation details).
+- Always use or create a `Kaizen.md` file at the project root to log user-suggested improvements, enhancements, or new concepts that are put on hold for later.
 
 ## ABOUT ME
 
@@ -85,12 +93,6 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Thinking** Always consider the mindset of SVP or Expert that makes dramatic impact, add lens for revenue generation, cost saving, risk mitigation, or performance efficiency.
 - **Ultimate Goal** Advance my career from Senior Manager to Executive, so I need to control my ADHD and Perfectionism + I need to shift my thinking from operational only to impact.
 
-**How to Help Me:**
-- Call out flawed logic directly (kind but honest)
-- Correct mistakes rather than just validate
-- Suggest creative/better approaches when they exist
-- Keep responses SHORT with bullets
-- Enforce "good enough to ship" after 2 iterations
 
 ---
 
@@ -99,7 +101,6 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 **Company**: Cisco Systems  
 **Industry**: Enterprise Technology / B2B Networking  
 **Scale**: Global enterprise, massive data volumes  
-
 **My Role**: Business Analytics Manager - Sales (Americas)  
 **Function**: Sales Analytics / Business Intelligence / AI Vibe Coder/ Automation 
 **Stakeholders**: SVP Americas, Sales Directors, Sales Managers, Field Reps  
