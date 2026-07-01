@@ -47,7 +47,7 @@ import {
   CUMULATIVE_STATS_EVENT,
   saveLastConfiguration,
 } from '@/lib/storage';
-import { autoDetectColumns, formatTimestamp, validateFilename, getParsedFieldName } from '@/lib/utils';
+import { autoDetectColumns, formatMonthDayTag, validateFilename, getParsedFieldName, toSlugBaseName } from '@/lib/utils';
 
 type ViewMode = 'upload' | 'setup' | 'results';
 
@@ -242,6 +242,7 @@ export default function Home() {
     };
 
     setConfig(prev => ({ ...prev, ...newConfig }));
+    setCustomFilename(toSlugBaseName(data.fileName));
   };
 
   const handleReferenceFileUploaded = (
@@ -492,9 +493,9 @@ export default function Home() {
       filename = 'cleaned_data';
     }
 
-    const timestamp = formatTimestamp();
-    const cleanedFilename = `${filename}_Cleaned_${timestamp}.csv`;
-    const comparisonFilename = `${filename}_Original_vs_Cleaned_${timestamp}.csv`;
+    const dateTag = formatMonthDayTag();
+    const cleanedFilename = `${filename}_Cleaned_${dateTag}.csv`;
+    const comparisonFilename = `${filename}_Original_vs_Cleaned_${dateTag}.csv`;
 
     const baseColumns = config.outputColumns.length > 0
       ? config.outputColumns

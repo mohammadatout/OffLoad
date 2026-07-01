@@ -21,10 +21,10 @@ export default function MatchingPage() {
   const [view, setView] = useState<MatchingView>('upload');
   const [error, setError] = useState('');
 
-  const [internalFile, setInternalFile] = useState<UploadedFile | null>(null);
   const [externalFile, setExternalFile] = useState<UploadedFile | null>(null);
-  const [internalCol, setInternalCol] = useState('');
+  const [internalFile, setInternalFile] = useState<UploadedFile | null>(null);
   const [externalCol, setExternalCol] = useState('');
+  const [internalCol, setInternalCol] = useState('');
 
   const [config, setConfig] = useState<MatchConfig>({
     internal_col: '',
@@ -42,7 +42,7 @@ export default function MatchingPage() {
     setConfig(prev => ({ ...prev, ...update }));
   }, []);
 
-  const canRun = internalFile && externalFile && internalCol && externalCol;
+  const canRun = externalFile && internalFile && externalCol && internalCol;
 
   async function handleRun() {
     if (!canRun) return;
@@ -53,11 +53,12 @@ export default function MatchingPage() {
     try {
       const matchConfig: MatchConfig = {
         ...config,
-        internal_col: internalCol,
-        external_col: externalCol,
+        // Matcher engine iterates over "internal_df", so we map External source to it.
+        internal_col: externalCol,
+        external_col: internalCol,
       };
 
-      const response = await runMatching(internalFile.file, externalFile.file, matchConfig);
+      const response = await runMatching(externalFile.file, internalFile.file, matchConfig);
       setResults(response.results);
       setStats(response.stats);
       setView('results');
@@ -90,29 +91,29 @@ export default function MatchingPage() {
               <div>
                 <h1 className="text-[16px] font-medium" style={{ color: '#080D44' }}>Entity Matching</h1>
                 <p className="text-[12px] mt-1" style={{ color: '#6B6B66' }}>
-                  Upload internal and external CSV files, select entity name columns, then run matching.
+                  Upload external and internal CSV files, select entity name columns, then run matching.
                 </p>
               </div>
 
               <MatchingUpload
-                internalFile={internalFile}
                 externalFile={externalFile}
-                internalCol={internalCol}
                 externalCol={externalCol}
-                onInternalUploaded={setInternalFile}
                 onExternalUploaded={setExternalFile}
-                onInternalColChange={setInternalCol}
                 onExternalColChange={setExternalCol}
+                internalFile={internalFile}
+                internalCol={internalCol}
+                onInternalUploaded={setInternalFile}
+                onInternalColChange={setInternalCol}
               />
 
               {/* State blocking warning */}
-              {config.use_state_blocking && externalFile && !externalFile.headers.some(h => /state/i.test(h)) && (
+              {config.use_state_blocking && internalFile && !internalFile.headers.some(h => /state/i.test(h)) && (
                 <div className="flex items-start gap-2 p-3 rounded-md"
                      style={{ background: '#FDF8E8', border: '1px solid #E5D5A0' }}>
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#B8860B' }} />
                   <div>
                     <p className="text-[11px] font-medium" style={{ color: '#080D44' }}>
-                      State Blocking is ON but external file has no state column
+                      State Blocking is ON but internal file has no state column
                     </p>
                     <p className="text-[10px] mt-0.5" style={{ color: '#6B6B66' }}>
                       This will likely result in zero matches. Turn off State Blocking in the config panel, or use a file with state information.
@@ -180,11 +181,17 @@ export default function MatchingPage() {
                 <div>
                   <h1 className="text-[16px] font-medium" style={{ color: '#080D44' }}>Results</h1>
                   <p className="text-[12px] mt-0.5" style={{ color: '#6B6B66' }}>
-                    {stats.total_matched.toLocaleString()} matched of {stats.total_internal.toLocaleString()} internal entities
+                    {stats.total_matched.toLocaleString()} matched of {stats.total_internal.toLocaleString()} external entities
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <MatchingExport results={results} reviewDecisions={reviewDecisions} />
+                  <MatchingExport
+                    results={results}
+                    reviewDecisions={reviewDecisions}
+                    externalCol={externalCol}
+                    internalCol={internalCol}
+                    externalFileName={externalFile?.file.name || ''}
+                  />
                   <button
                     onClick={handleReset}
                     className="h-10 px-5 rounded-full text-[12px] font-medium transition-colors"
@@ -200,6 +207,8 @@ export default function MatchingPage() {
                 stats={stats}
                 reviewDecisions={reviewDecisions}
                 onReviewDecisionsChange={setReviewDecisions}
+                externalCol={externalCol}
+                internalCol={internalCol}
               />
             </div>
           )}

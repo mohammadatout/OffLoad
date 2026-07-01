@@ -28,20 +28,20 @@ export default function MatchingUpload({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <UploadCard
-        label="Internal File"
-        description="Your source entities to match"
-        uploaded={internalFile}
-        selectedCol={internalCol}
-        onUploaded={onInternalUploaded}
-        onColChange={onInternalColChange}
-      />
-      <UploadCard
         label="External File"
-        description="Target entities to match against"
+        description="Your source entities to match"
         uploaded={externalFile}
         selectedCol={externalCol}
         onUploaded={onExternalUploaded}
         onColChange={onExternalColChange}
+      />
+      <UploadCard
+        label="Internal File"
+        description="Target entities to match against"
+        uploaded={internalFile}
+        selectedCol={internalCol}
+        onUploaded={onInternalUploaded}
+        onColChange={onInternalColChange}
       />
     </div>
   );

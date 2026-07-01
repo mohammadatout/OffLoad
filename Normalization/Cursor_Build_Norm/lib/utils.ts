@@ -345,6 +345,25 @@ export function formatTimestamp(): string {
   return `${year}${month}${day}_${hours}${minutes}${seconds}`;
 }
 
+// Format date as MMM_DD for filenames (e.g., Jun_30)
+export function formatMonthDayTag(date: Date = new Date()): string {
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${month}_${day}`;
+}
+
+// Convert a filename into a slug base (no extension, safe chars)
+export function toSlugBaseName(filename: string): string {
+  const base = filename.replace(/\.[^/.]+$/, '');
+  const slug = base
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return slug || 'data';
+}
+
 // Validate filename
 export function validateFilename(filename: string): boolean {
   // Only allow alphanumeric, hyphens, and underscores
