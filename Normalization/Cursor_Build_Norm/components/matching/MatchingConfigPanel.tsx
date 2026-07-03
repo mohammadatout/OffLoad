@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronRight, AlertTriangle, Plus, X } from 'lucide-react';
 import { MatchConfig } from '@/lib/matchingTypes';
+import { Switch } from '@/components/ui/Switch';
 
 interface MatchingConfigPanelProps {
   config: MatchConfig;
@@ -61,21 +62,10 @@ export default function MatchingConfigPanel({ config, onConfigChange }: Matching
               {/* State Blocking Toggle */}
               <div className="flex items-center justify-between">
                 <span className="text-[11px]" style={{ color: '#0A0A0A' }}>State Blocking</span>
-                <button
-                  onClick={() => onConfigChange({ use_state_blocking: !config.use_state_blocking })}
-                  className="toggle-switch"
-                  style={{
-                    width: 28, height: 16, borderRadius: 8, position: 'relative',
-                    background: config.use_state_blocking ? '#0A0A0A' : '#D5D3CC',
-                    transition: 'background 0.15s ease',
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute', top: 2, left: config.use_state_blocking ? 14 : 2,
-                    width: 12, height: 12, borderRadius: '50%', background: '#fff',
-                    transition: 'left 0.15s ease',
-                  }} />
-                </button>
+                <Switch
+                  checked={config.use_state_blocking}
+                  onCheckedChange={(checked) => onConfigChange({ use_state_blocking: checked })}
+                />
               </div>
 
               {config.use_state_blocking && (
@@ -91,21 +81,10 @@ export default function MatchingConfigPanel({ config, onConfigChange }: Matching
               {/* Context Validation Toggle */}
               <div className="flex items-center justify-between">
                 <span className="text-[11px]" style={{ color: '#0A0A0A' }}>Context Validation</span>
-                <button
-                  onClick={() => onConfigChange({ use_context_validation: !config.use_context_validation })}
-                  className="toggle-switch"
-                  style={{
-                    width: 28, height: 16, borderRadius: 8, position: 'relative',
-                    background: config.use_context_validation ? '#0A0A0A' : '#D5D3CC',
-                    transition: 'background 0.15s ease',
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute', top: 2, left: config.use_context_validation ? 14 : 2,
-                    width: 12, height: 12, borderRadius: '50%', background: '#fff',
-                    transition: 'left 0.15s ease',
-                  }} />
-                </button>
+                <Switch
+                  checked={config.use_context_validation}
+                  onCheckedChange={(checked) => onConfigChange({ use_context_validation: checked })}
+                />
               </div>
             </div>
           )}

@@ -3,33 +3,46 @@
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
 import { MatchResult, ReviewDecision } from '@/lib/matchingTypes';
+import { buildTaggedOrderedRow } from '@/lib/matchingOutput';
+import { formatMonthDayTag, toSlugBaseName } from '@/lib/utils';
 
 interface MatchingExportProps {
   results: MatchResult[];
   reviewDecisions: ReviewDecision[];
+  externalCol: string;
+  internalCol: string;
+  externalFileName: string;
 }
 
-export default function MatchingExport({ results, reviewDecisions }: MatchingExportProps) {
+export default function MatchingExport({
+  results,
+  reviewDecisions,
+  externalCol,
+  internalCol,
+  externalFileName,
+}: MatchingExportProps) {
   function exportCsv() {
     const exportData = results.map((r, idx) => {
       const reviewItem = r.Match_Stage === 'review'
         ? reviewDecisions.find(d => d.internalIdx === idx)
         : null;
 
-      return {
+      const baseRow = {
         ...r,
         Review_Decision: reviewItem ? (reviewItem.accepted ? 'Accepted' : 'Rejected') : '',
         Review_Selected: reviewItem?.selectedCandidate || '',
       };
+      return buildTaggedOrderedRow(baseRow, externalCol, internalCol);
     });
 
     const csv = Papa.unparse(exportData);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const dateTag = formatMonthDayTag();
+    const baseName = toSlugBaseName(externalFileName || 'matching_results');
     const a = document.createElement('a');
     a.href = url;
-    a.download = `matching_results_${ts}.csv`;
+    a.download = `${baseName}_Matched_${dateTag}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

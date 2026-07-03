@@ -4,19 +4,29 @@ import { useState, useMemo } from 'react';
 import { MatchResult, MatchStats } from '@/lib/matchingTypes';
 import ReviewQueue from './ReviewQueue';
 import type { ReviewDecision } from '@/lib/matchingTypes';
+import { buildTaggedOrderedRow } from '@/lib/matchingOutput';
 
 interface MatchingResultsProps {
   results: MatchResult[];
   stats: MatchStats;
   reviewDecisions: ReviewDecision[];
   onReviewDecisionsChange: (decisions: ReviewDecision[]) => void;
+  externalCol: string;
+  internalCol: string;
 }
 
 type ResultTab = 'all' | 'stages' | 'review';
 
 const ROWS_PER_PAGE = 50;
 
-export default function MatchingResults({ results, stats, reviewDecisions, onReviewDecisionsChange }: MatchingResultsProps) {
+export default function MatchingResults({
+  results,
+  stats,
+  reviewDecisions,
+  onReviewDecisionsChange,
+  externalCol,
+  internalCol,
+}: MatchingResultsProps) {
   const [activeTab, setActiveTab] = useState<ResultTab>('all');
   const [page, setPage] = useState(0);
   const [sortDesc, setSortDesc] = useState(true);
@@ -34,8 +44,28 @@ export default function MatchingResults({ results, stats, reviewDecisions, onRev
     );
   }, [results, sortDesc]);
 
-  const totalPages = Math.ceil(sortedResults.length / ROWS_PER_PAGE);
-  const pageResults = sortedResults.slice(page * ROWS_PER_PAGE, (page + 1) * ROWS_PER_PAGE);
+  const displayRows = useMemo(
+    () => sortedResults.map((r) => buildTaggedOrderedRow(r, externalCol, internalCol)),
+    [sortedResults, externalCol, internalCol]
+  );
+
+  const totalPages = Math.ceil(displayRows.length / ROWS_PER_PAGE);
+  const pageResults = displayRows.slice(page * ROWS_PER_PAGE, (page + 1) * ROWS_PER_PAGE);
+  const primaryExternalKey = `External_${externalCol}`;
+  const primaryMatchedInternalKey = `Matched_Internal_${internalCol}`;
+  const firstColumns = useMemo(
+    () => [primaryExternalKey, 'Match_%', primaryMatchedInternalKey, 'Match_Stage'],
+    [primaryExternalKey, primaryMatchedInternalKey]
+  );
+  const extraColumns = useMemo(() => {
+    const seen = new Set<string>();
+    displayRows.forEach((row) => {
+      Object.keys(row).forEach((k) => {
+        if (!firstColumns.includes(k)) seen.add(k);
+      });
+    });
+    return Array.from(seen);
+  }, [displayRows, firstColumns]);
 
   const reviewItems = useMemo(() =>
     results.filter(r => r.Match_Stage === 'review'),
@@ -75,26 +105,30 @@ export default function MatchingResults({ results, stats, reviewDecisions, onRev
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-left px-3 py-2">Internal Name</th>
-                  <th className="text-left px-3 py-2">Matched Name</th>
+                  <th className="text-left px-3 py-2">External {externalCol || 'Name'}</th>
                   <th
                     className="text-left px-3 py-2 cursor-pointer select-none"
                     onClick={() => setSortDesc(!sortDesc)}
                   >
-                    Score {sortDesc ? '↓' : '↑'}
+                    Match % {sortDesc ? '↓' : '↑'}
                   </th>
-                  <th className="text-left px-3 py-2">Stage</th>
-                  <th className="text-left px-3 py-2">State</th>
+                  <th className="text-left px-3 py-2">Matched Internal {internalCol || 'Name'}</th>
+                  <th className="text-left px-3 py-2">Match Stage</th>
+                  {extraColumns.map((col) => (
+                    <th key={col} className="text-left px-3 py-2">{col}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {pageResults.map((r, i) => (
                   <tr key={i}>
-                    <td className="px-3 py-2">{String(r[Object.keys(r).find(k => k.includes('Internal') || k.includes('internal') || k === 'Full_Entity_Name') || ''] || '')}</td>
-                    <td className="px-3 py-2">{r.Matched_Name}</td>
-                    <td className="px-3 py-2 font-mono">{Number(r.Confidence_Score).toFixed(2)}</td>
-                    <td className="px-3 py-2">{r.Match_Stage}</td>
-                    <td className="px-3 py-2">{r.State}</td>
+                    <td className="px-3 py-2">{String(r[primaryExternalKey] ?? '')}</td>
+                    <td className="px-3 py-2 font-mono">{Number(r['Match_%'] ?? 0).toFixed(2)}%</td>
+                    <td className="px-3 py-2">{String(r[primaryMatchedInternalKey] ?? '')}</td>
+                    <td className="px-3 py-2">{String(r.Match_Stage ?? '')}</td>
+                    {extraColumns.map((col) => (
+                      <td key={col} className="px-3 py-2">{String(r[col] ?? '')}</td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
@@ -104,7 +138,7 @@ export default function MatchingResults({ results, stats, reviewDecisions, onRev
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-3 px-1">
               <span className="text-[10px] font-mono" style={{ color: '#6B6B66' }}>
-                {sortedResults.length} matched results
+                {displayRows.length} matched results
               </span>
               <div className="flex items-center gap-2">
                 <button

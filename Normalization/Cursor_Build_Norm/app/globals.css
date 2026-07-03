@@ -18,7 +18,7 @@ body {
 
 body {
   background: #F4F3EE;
-  color: #0A0A0A;
+  color: #080D44;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -79,7 +79,7 @@ body {
   text-align: left;
   background: transparent;
   border: none;
-  color: #0A0A0A;
+  color: #080D44;
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -108,7 +108,7 @@ body {
 }
 
 .toggle-switch.active {
-  background: #0A0A0A;
+  background: #080D44;
 }
 
 .toggle-switch::after {
@@ -144,7 +144,7 @@ body {
 }
 
 .quality-bar-fill.ok {
-  background: #0A0A0A;
+  background: #080D44;
 }
 
 .quality-bar-fill.warn {
@@ -177,7 +177,7 @@ body {
 
 .data-table tbody tr {
   border-bottom: 1px solid #F0EFEA;
-  color: #0A0A0A;
+  color: #080D44;
   transition: background 0.1s ease;
 }
 
@@ -216,11 +216,11 @@ body {
 
 .step-item.active {
   background: rgba(10,10,10,0.07);
-  color: #0A0A0A;
+  color: #080D44;
 }
 
 .step-item.done {
-  color: #0A0A0A;
+  color: #080D44;
 }
 
 .step-item.pending {
@@ -240,7 +240,7 @@ body {
 }
 
 .step-number.active {
-  border-color: #0A0A0A;
+  border-color: #080D44;
   background: rgba(10,10,10,0.07);
 }
 
@@ -253,8 +253,9 @@ body {
   gap: 12px;
   padding: 12px 16px;
   border-radius: 6px;
-  border: 1px solid #E5D5A0;
-  background: #FDF8E8;
+  border: 1px solid #2a2c2c;
+  background: #414344;
+  color: #ffffff;
 }
 
 /* ========================================
@@ -276,20 +277,20 @@ body {
 }
 
 .btn-pill-primary {
-  background: #0A0A0A;
+  background: #080D44;
   color: #fff;
   padding: 0 16px 0 20px;
 }
 
 .btn-pill-primary:hover {
-  background: #1F1F1F;
+  background: #0a1258;
   transform: translateY(-1px);
 }
 
 .btn-pill-secondary {
   background: transparent;
-  color: #0A0A0A;
-  border: 1px solid #0A0A0A;
+  color: #080D44;
+  border: 1px solid #080D44;
   padding: 0 20px;
 }
 
@@ -305,7 +306,7 @@ body {
   width: 100%;
   height: 36px;
   border-radius: 6px;
-  background: #0A0A0A;
+  background: #080D44;
   color: #fff;
   font-size: 12px;
   font-weight: 500;
@@ -319,7 +320,7 @@ body {
 }
 
 .btn-accent:hover {
-  background: #1F1F1F;
+  background: #0a1258;
 }
 
 /* ========================================
@@ -334,7 +335,7 @@ body {
    Upload zone
    ======================================== */
 .upload-zone-drag {
-  border-color: #0A0A0A !important;
+  border-color: #080D44 !important;
   background: rgba(10,10,10,0.03) !important;
 }
 
@@ -363,7 +364,7 @@ body {
 
 .progress-bar-fill {
   height: 100%;
-  background: #0A0A0A;
+  background: #080D44;
   border-radius: 9999px;
   transition: width 0.3s ease;
 }
@@ -383,7 +384,7 @@ body {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #0A0A0A 0%, #3A3A36 100%);
+  background: linear-gradient(135deg, #080D44 0%, #3A3A36 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -419,18 +420,21 @@ body {
   );
 }
 
-/* Highlight pulse for suggested button */
+/* Highlight pulse — red accent for “Use suggested” CTA */
 @keyframes pulse-highlight {
   0% {
-    box-shadow: 0 0 0 0 rgba(10,10,10,0.2);
+    box-shadow: 0 0 0 0 rgba(227, 36, 27, 0);
+    border-color: rgba(227, 36, 27, 0.45);
     transform: translateY(0);
   }
   50% {
-    box-shadow: 0 0 12px 4px rgba(10,10,10,0.1);
+    box-shadow: 0 0 0 3px rgba(227, 36, 27, 0.24), 0 0 18px rgba(227, 36, 27, 0.2);
+    border-color: #e3241b;
     transform: translateY(-1px);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(10,10,10,0);
+    box-shadow: 0 0 0 0 rgba(227, 36, 27, 0);
+    border-color: rgba(227, 36, 27, 0.45);
     transform: translateY(0);
   }
 }
@@ -438,6 +442,8 @@ body {
 .pulse-highlight {
   animation: pulse-highlight 1.8s ease-in-out infinite;
   position: relative;
+  border-color: rgba(227, 36, 27, 0.72) !important;
+  color: #e3241b !important;
 }
 
 /* Stat animation */

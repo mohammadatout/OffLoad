@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { ConfigurationPanel } from '@/components/ConfigurationPanel';
-import { AbbreviationManager } from '@/components/AbbreviationManager';
-import { LegalEntitiesManager } from '@/components/LegalEntitiesManager';
 import { ResultsDisplay } from '@/components/ResultsDisplay';
 import { StatsPanel } from '@/components/StatsPanel';
 import { PreviewTable } from '@/components/PreviewTable';
@@ -13,20 +11,16 @@ import { ReferenceFileUpload } from '@/components/ReferenceFileUpload';
 import { ColumnProfiler } from '@/components/ColumnProfiler';
 import { ProcessingProgressBar } from '@/components/ProcessingProgressBar';
 import { DataQualityScoreCard } from '@/components/DataQualityScoreCard';
+import { TopValuesSpotlight } from '@/components/TopValuesSpotlight';
 import { ConfigurationManager } from '@/components/ConfigurationManager';
 import { BatchFileUpload } from '@/components/BatchFileUpload';
-import { AccordionItem } from '@/components/ui/Accordion';
 import {
   RefreshCw,
   XCircle,
-  BookOpen,
-  Zap,
-  Settings2,
   CheckCircle2,
   ChevronRight,
   Play,
   AlertCircle,
-  Circle,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
@@ -50,9 +44,14 @@ import {
   CUMULATIVE_STATS_EVENT,
   saveLastConfiguration,
 } from '@/lib/storage';
-import { autoDetectColumns, formatTimestamp, validateFilename, getParsedFieldName } from '@/lib/utils';
+import { autoDetectColumns, formatMonthDayTag, validateFilename, getParsedFieldName, toSlugBaseName } from '@/lib/utils';
 
 type ViewMode = 'upload' | 'setup' | 'results';
+type ConfigMode = 'simple' | 'advanced';
+const SETUP_SIDEBAR_MIN_WIDTH = 300;
+const SETUP_SIDEBAR_MAX_WIDTH = 560;
+const SETUP_MAIN_MIN_WIDTH = 640;
+const ACCENT_GREEN = '#74bf4b';
 
 const deriveDefaultSelectedColumns = (headers: string[]): string[] => {
   const prioritized = headers.filter((header) => {
@@ -94,7 +93,7 @@ export default function Home() {
   const [dedupeAuditLookup, setDedupeAuditLookup] = useState<Record<number, CSVRow>>({});
 
   const [config, setConfig] = useState<ProcessingConfig>({
-    uppercaseConversion: false,
+    uppercaseConversion: true,
     normalizationCleanup: true,
     addressParsingEnabled: false,
     addressColumns: [],
@@ -123,13 +122,42 @@ export default function Home() {
     excludeStopwords: false,
   });
 
-  const [dictionariesOpen, setDictionariesOpen] = useState(false);
-  const [isConfigVisibleOnResults, setIsConfigVisibleOnResults] = useState(true);
   const [processingProgress, setProcessingProgress] = useState<ProcessingProgress | null>(null);
   const [showColumnProfiler, setShowColumnProfiler] = useState(false);
   const [selectedProfileColumn, setSelectedProfileColumn] = useState<string>('');
   const [showBatchMode, setShowBatchMode] = useState(false);
   const [excludedColumns, setExcludedColumns] = useState<string[]>([]);
+  const [setupSidebarWidth, setSetupSidebarWidth] = useState(360);
+  const [configMode, setConfigMode] = useState<ConfigMode>('simple');
+  const setupContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const schemaHints = useMemo(() => {
+    if (!fileData) {
+      return {
+        detected: null as ReturnType<typeof autoDetectColumns> | null,
+        phoneCandidates: [] as string[],
+        websiteCandidates: [] as string[],
+        addressCandidates: [] as string[],
+      };
+    }
+    const detected = autoDetectColumns(fileData.headers);
+    const phoneCandidates = fileData.headers.filter((h) =>
+      /phone|tel|mobile|fax|contact/i.test(h)
+    );
+    const websiteCandidates = fileData.headers.filter((h) =>
+      /website|url|domain|web|link/i.test(h)
+    );
+    const addressCandidates = [detected.address1, detected.address2].filter(
+      (col): col is string => Boolean(col)
+    );
+
+    return {
+      detected,
+      phoneCandidates,
+      websiteCandidates,
+      addressCandidates,
+    };
+  }, [fileData]);
 
   const handleColumnExcludeToggle = (column: string) => {
     setExcludedColumns(prev =>
@@ -246,6 +274,7 @@ export default function Home() {
     };
 
     setConfig(prev => ({ ...prev, ...newConfig }));
+    setCustomFilename(toSlugBaseName(data.fileName));
   };
 
   const handleReferenceFileUploaded = (
@@ -341,6 +370,45 @@ export default function Home() {
     });
   };
 
+  const handleSetupSidebarResizeStart = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      const container = setupContainerRef.current;
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const startX = event.clientX;
+      const startWidth = setupSidebarWidth;
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientX - startX;
+        const maxByViewport = Math.max(
+          SETUP_SIDEBAR_MIN_WIDTH,
+          containerRect.width - SETUP_MAIN_MIN_WIDTH
+        );
+        const next = Math.max(
+          SETUP_SIDEBAR_MIN_WIDTH,
+          Math.min(SETUP_SIDEBAR_MAX_WIDTH, Math.min(maxByViewport, startWidth + delta))
+        );
+        setSetupSidebarWidth(Math.round(next));
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    },
+    [setupSidebarWidth]
+  );
+
   const handleProgressUpdate = useCallback((progress: ProcessingProgress) => {
     setProcessingProgress(progress);
   }, []);
@@ -413,7 +481,7 @@ export default function Home() {
   };
 
   const getDefaultConfig = (): ProcessingConfig => ({
-    uppercaseConversion: false,
+    uppercaseConversion: true,
     normalizationCleanup: true,
     addressParsingEnabled: false,
     addressColumns: [],
@@ -496,9 +564,9 @@ export default function Home() {
       filename = 'cleaned_data';
     }
 
-    const timestamp = formatTimestamp();
-    const cleanedFilename = `${filename}_Cleaned_${timestamp}.csv`;
-    const comparisonFilename = `${filename}_Original_vs_Cleaned_${timestamp}.csv`;
+    const dateTag = formatMonthDayTag();
+    const cleanedFilename = `${filename}_Cleaned_${dateTag}.csv`;
+    const comparisonFilename = `${filename}_Original_vs_Cleaned_${dateTag}.csv`;
 
     const baseColumns = config.outputColumns.length > 0
       ? config.outputColumns
@@ -571,16 +639,60 @@ export default function Home() {
     setIsCompanySuggestionAcknowledged(Boolean(value));
   };
 
-  useEffect(() => {
-    if (viewMode === 'results') {
-      setIsConfigVisibleOnResults(false);
-    } else {
-      setIsConfigVisibleOnResults(true);
-    }
-  }, [viewMode]);
+  const applyRecommendedAddressParsing = () => {
+    if (schemaHints.addressCandidates.length === 0) return;
+    handleConfigChange({
+      addressParsingEnabled: true,
+      addressColumns: schemaHints.addressCandidates,
+    });
+  };
+
+  const applyRecommendedPhoneNormalization = () => {
+    handleConfigChange({
+      phoneNormalizationEnabled: true,
+      phoneColumns:
+        config.phoneColumns.length > 0 ? config.phoneColumns : schemaHints.phoneCandidates,
+    });
+  };
+
+  const applyRecommendedWebsiteNormalization = () => {
+    handleConfigChange({
+      websiteNormalizationEnabled: true,
+      websiteColumns:
+        config.websiteColumns.length > 0 ? config.websiteColumns : schemaHints.websiteCandidates,
+      extractDomain: true,
+    });
+  };
+
+  const applyRecommendedValidation = () => {
+    if (!schemaHints.detected) return;
+    handleConfigChange({
+      cityStateValidationEnabled: true,
+      cityColumn: config.cityColumn || schemaHints.detected.city || '',
+      stateColumn: config.stateColumn || schemaHints.detected.state || '',
+    });
+  };
 
   const isCompanyColumnMissing = !config.companyNameColumn;
   const isReferenceFileMissing = config.cityStateValidationEnabled && referenceData.length === 0;
+  const setupMissingRequirements = useMemo(() => {
+    const missing: string[] = [];
+    if (config.selectedColumns.length === 0) missing.push('Select at least one column to normalize');
+    if (!config.companyNameColumn) missing.push('Select the master entity/company field');
+    if (config.cityStateValidationEnabled && referenceData.length === 0) {
+      missing.push('Upload a city/state reference file');
+    }
+    return missing;
+  }, [
+    config.selectedColumns.length,
+    config.companyNameColumn,
+    config.cityStateValidationEnabled,
+    referenceData.length,
+  ]);
+  const setupIsReady = setupMissingRequirements.length === 0;
+  const setupMissingSummary = setupIsReady
+    ? 'Ready to run normalization'
+    : `${setupMissingRequirements.length} required field${setupMissingRequirements.length === 1 ? '' : 's'} missing`;
 
   const steps = [
     { n: 1, label: 'Upload', done: viewMode !== 'upload', active: viewMode === 'upload' },
@@ -601,10 +713,10 @@ export default function Home() {
   ].filter(Boolean).length;
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden h-[calc(100vh-48px)]">
       {/* Step Indicator */}
       <div className="border-b border-app-border bg-app-bg flex-shrink-0">
-        <div className="max-w-[1440px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-2 flex items-center justify-between">
           <div className="step-indicator">
             {steps.map((s, i) => (
               <React.Fragment key={s.n}>
@@ -620,7 +732,7 @@ export default function Home() {
               </React.Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-phi-2">
             {viewMode !== 'upload' && (
               <button
                 onClick={handleReset}
@@ -644,224 +756,316 @@ export default function Home() {
       </div>
 
       {/* Main Body */}
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-[1440px] mx-auto px-6 py-6">
+      <main className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <div className="max-w-[1440px] mx-auto px-phi-3 py-phi-3 flex-1 flex flex-col min-h-0 w-full">
           {/* Upload View */}
           {viewMode === 'upload' && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <FileUpload
-                onFileUploaded={handleFileUploaded}
-                showBatchMode={showBatchMode}
-                onBatchModeChange={setShowBatchMode}
-              />
-            </motion.div>
+            <div className="overflow-y-auto flex-1">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                <FileUpload
+                  onFileUploaded={handleFileUploaded}
+                  showBatchMode={showBatchMode}
+                  onBatchModeChange={setShowBatchMode}
+                />
+              </motion.div>
+            </div>
           )}
 
           {/* Setup View — two-column layout */}
           {viewMode === 'setup' && fileData && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div
+                ref={setupContainerRef}
+                className="grid grid-cols-1 lg:[grid-template-columns:var(--setup-sidebar-width)_minmax(0,1fr)] gap-phi-3 flex-1 min-h-0 h-full"
+                style={{ ['--setup-sidebar-width' as string]: `${setupSidebarWidth}px` }}
+              >
 
-              {/* Left: Config Panel */}
-              <aside className="space-y-2 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-[11px] font-mono uppercase tracking-wider text-app-muted">
-                    Configuration
-                  </h2>
-                  <span className="text-[10px] font-mono text-app-accent bg-app-accent/10 px-1.5 py-0.5 rounded">
-                    {activeCount} active
-                  </span>
-                </div>
+                {/* Left: Config Panel */}
+                <aside className="relative h-full pr-1 flex flex-col overflow-hidden">
+                  <div className="mb-phi-2 shrink-0 flex items-center justify-end">
+                    <span className="inline-flex text-[10px] font-mono px-1.5 py-0.5 rounded border"
+                          style={{ color: ACCENT_GREEN, borderColor: '#D9EBCF', background: '#F4FAF0' }}>
+                      {activeCount} active
+                    </span>
+                  </div>
 
-                <ConfigurationPanel
-                  config={config}
-                  onConfigChange={handleConfigChange}
-                  availableColumns={derivedColumns}
-                  renames={config.columnRenames}
-                  onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
-                  referenceUploadSlot={
-                    config.cityStateValidationEnabled ? (
-                      <ReferenceFileUpload
-                        onReferenceFileUploaded={handleReferenceFileUploaded}
-                        onReferenceFileCleared={handleReferenceFileCleared}
-                        existingFileInfo={referenceFileInfo}
-                        existingMapping={referenceMapping}
-                        isRequired={config.cityStateValidationEnabled}
+                  <div className="flex-1 overflow-y-auto space-y-phi-1 pr-1 pb-4">
+                    <ConfigurationPanel
+                      compact
+                      mode={configMode}
+                      onModeChange={setConfigMode}
+                      config={config}
+                      onConfigChange={handleConfigChange}
+                      availableColumns={derivedColumns}
+                      renames={config.columnRenames}
+                      onRenamesChange={(renames) => handleConfigChange({ columnRenames: renames })}
+                      referenceUploadSlot={
+                        config.cityStateValidationEnabled ? (
+                          <ReferenceFileUpload
+                            onReferenceFileUploaded={handleReferenceFileUploaded}
+                            onReferenceFileCleared={handleReferenceFileCleared}
+                            existingFileInfo={referenceFileInfo}
+                            existingMapping={referenceMapping}
+                            isRequired={config.cityStateValidationEnabled}
+                          />
+                        ) : null
+                      }
+                      referenceUploadMissing={isReferenceFileMissing}
+                      showReferenceUploader={config.cityStateValidationEnabled}
+                    />
+
+                    {configMode === 'advanced' && (
+                      <ConfigurationManager
+                        currentConfig={config}
+                        onLoadConfiguration={handleLoadConfiguration}
                       />
-                    ) : null
-                  }
-                  referenceUploadMissing={isReferenceFileMissing}
-                  showReferenceUploader={config.cityStateValidationEnabled}
-                />
-
-                <AccordionItem
-                  title="Dictionaries & Lists"
-                  icon={<BookOpen className="w-4 h-4 text-app-accent" />}
-                  isOpen={dictionariesOpen}
-                  onToggle={() => setDictionariesOpen(!dictionariesOpen)}
-                >
-                  <div className="space-y-4 pt-2">
-                    <AbbreviationManager />
-                    <LegalEntitiesManager />
-                  </div>
-                </AccordionItem>
-
-                <ConfigurationManager
-                  currentConfig={config}
-                  onLoadConfiguration={handleLoadConfiguration}
-                />
-
-                {/* Run button */}
-                <button
-                  onClick={isProcessing ? handleCancelProcessing : handleStartProcessing}
-                  disabled={!isProcessing && (!fileData || config.selectedColumns.length === 0 || isCompanyColumnMissing || isReferenceFileMissing)}
-                  className={`btn-accent mt-4 ${isProcessing ? '!bg-red-500 hover:!bg-red-600' : ''} disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isProcessing ? (
-                    <><XCircle className="w-3.5 h-3.5" /> Cancel</>
-                  ) : (
-                    <><Play className="w-3.5 h-3.5 fill-current" /> Run Normalization</>
-                  )}
-                </button>
-              </aside>
-
-              {/* Right: Work Area */}
-              <section className="space-y-4 overflow-y-auto max-h-[calc(100vh-160px)]">
-                {/* Processing Error */}
-                {processingError && (
-                  <div className="flex items-start gap-3 px-4 py-3 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[12px]">
-                    <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{processingError}</span>
-                  </div>
-                )}
-
-                {/* Processing Progress */}
-                <ProcessingProgressBar
-                  progress={processingProgress}
-                  isProcessing={isProcessing}
-                />
-
-                {/* Company column warning */}
-                {isCompanyColumnMissing && (
-                  <div className="callout-warn">
-                    <AlertCircle className="w-4 h-4 text-app-warn mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="text-[12px] text-app-text">
-                        Select the <span className="font-medium">main entity field</span> to enable processing.
-                      </div>
-                      {suggestedCompanyColumn && !isCompanySuggestionAcknowledged && (
-                        <div className="text-[11px] text-app-muted mt-0.5">
-                          We suggest <span className="font-mono text-app-warn">{suggestedCompanyColumn}</span>.
-                        </div>
-                      )}
-                    </div>
-                    {suggestedCompanyColumn && !isCompanySuggestionAcknowledged && (
-                      <button
-                        onClick={() => handleCompanyFieldSelection(suggestedCompanyColumn)}
-                        className="text-[11px] text-app-warn hover:underline shrink-0"
-                      >
-                        Use suggestion →
-                      </button>
                     )}
                   </div>
-                )}
 
-                {/* Quality + Preview */}
-                <DataQualityScoreCard
-                  data={fileData.data}
-                  headers={fileData.headers}
-                  config={config}
-                />
+                  <div className="sticky bottom-0 shrink-0 rounded-md border border-app-border bg-white/95 backdrop-blur px-phi-2 py-phi-2 mt-phi-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                      <div className="min-w-0">
+                        <div
+                          className="text-[11px] font-medium truncate"
+                          style={{ color: setupIsReady ? ACCENT_GREEN : '#080D44' }}
+                        >
+                          {setupMissingSummary}
+                        </div>
+                        {!setupIsReady && (
+                          <p className="text-[10px] text-app-muted mt-0.5 truncate">
+                            {setupMissingRequirements.slice(0, 2).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={isProcessing ? handleCancelProcessing : handleStartProcessing}
+                        disabled={!isProcessing && !setupIsReady}
+                        className={`h-9 px-3 rounded-full text-[11px] font-medium transition-colors shrink-0 ${isProcessing ? '!bg-red-500 hover:!bg-red-600 text-white' : 'text-white'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        style={{ background: isProcessing ? undefined : '#080D44' }}
+                      >
+                        {isProcessing ? (
+                          <span className="inline-flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> Cancel</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5"><Play className="w-3.5 h-3.5 fill-current" /> Run Normalization</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
-                {showBatchMode && (
-                  <BatchFileUpload
-                    config={config}
-                    onBatchComplete={(results) => {
-                      console.log('Batch processing complete:', results);
+                  <button
+                    type="button"
+                    aria-label="Resize configuration panel"
+                    onMouseDown={handleSetupSidebarResizeStart}
+                    className="hidden lg:flex absolute -right-2 top-0 h-full w-4 cursor-col-resize items-center justify-center z-20 group"
+                  >
+                    <span className="h-16 w-[2px] rounded-full bg-[#D5D3CC] group-hover:bg-[#B8860B] transition-colors" />
+                  </button>
+                </aside>
+
+                {/* Right: Work Area */}
+                <section className="space-y-phi-2 overflow-y-auto h-full pr-1 pb-4">
+                  {/* Processing Error */}
+                  {processingError && (
+                    <div className="flex items-start gap-phi-2 px-phi-2 py-phi-2 rounded-md border border-red-500/30 bg-red-500/10 text-red-400 text-[12px]">
+                      <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      <span>{processingError}</span>
+                    </div>
+                  )}
+
+                  {/* Processing Progress */}
+                  <ProcessingProgressBar
+                    progress={processingProgress}
+                    isProcessing={isProcessing}
+                  />
+
+                  {/* Company column warning */}
+                  {isCompanyColumnMissing && (
+                    <div className="callout-warn">
+                      <AlertCircle className="w-4 h-4 text-white mt-0.5 shrink-0" />
+                      <div className="flex-1">
+                        <div className="text-[12px]" style={{ color: ACCENT_GREEN }}>
+                          Select the <span className="font-medium">main entity field</span> to enable processing.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommended setup chips */}
+                  {((
+                    suggestedCompanyColumn && !isCompanySuggestionAcknowledged
+                  ) || (
+                    schemaHints.addressCandidates.length > 0 && !config.addressParsingEnabled
+                  ) || (
+                    schemaHints.phoneCandidates.length > 0 && !config.phoneNormalizationEnabled
+                  ) || (
+                    schemaHints.websiteCandidates.length > 0 && !config.websiteNormalizationEnabled
+                  ) || (
+                    configMode === 'advanced' &&
+                    Boolean(schemaHints.detected?.city && schemaHints.detected?.state) &&
+                    !config.cityStateValidationEnabled
+                  )) && (
+                    <div className="rounded-md border border-app-border bg-white px-phi-2 py-phi-2">
+                      <div className="text-[11px] font-medium text-app-text mb-2">Recommended setup</div>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedCompanyColumn && !isCompanySuggestionAcknowledged && (
+                          <button
+                            type="button"
+                            onClick={() => handleCompanyFieldSelection(suggestedCompanyColumn)}
+                            className="h-7 px-2.5 rounded-full text-[10px] font-medium border transition-colors"
+                            style={{ borderColor: '#D9EBCF', background: '#F4FAF0', color: ACCENT_GREEN }}
+                          >
+                            Set entity field: {suggestedCompanyColumn}
+                          </button>
+                        )}
+                        {schemaHints.addressCandidates.length > 0 && !config.addressParsingEnabled && (
+                          <button
+                            type="button"
+                            onClick={applyRecommendedAddressParsing}
+                            className="h-7 px-2.5 rounded-full text-[10px] font-medium border transition-colors"
+                            style={{ borderColor: '#D9EBCF', background: '#F4FAF0', color: ACCENT_GREEN }}
+                          >
+                            Enable address parsing
+                          </button>
+                        )}
+                        {schemaHints.phoneCandidates.length > 0 && !config.phoneNormalizationEnabled && (
+                          <button
+                            type="button"
+                            onClick={applyRecommendedPhoneNormalization}
+                            className="h-7 px-2.5 rounded-full text-[10px] font-medium border transition-colors"
+                            style={{ borderColor: '#D9EBCF', background: '#F4FAF0', color: ACCENT_GREEN }}
+                          >
+                            Normalize phone columns
+                          </button>
+                        )}
+                        {schemaHints.websiteCandidates.length > 0 && !config.websiteNormalizationEnabled && (
+                          <button
+                            type="button"
+                            onClick={applyRecommendedWebsiteNormalization}
+                            className="h-7 px-2.5 rounded-full text-[10px] font-medium border transition-colors"
+                            style={{ borderColor: '#D9EBCF', background: '#F4FAF0', color: ACCENT_GREEN }}
+                          >
+                            Normalize website columns
+                          </button>
+                        )}
+                        {configMode === 'advanced' && schemaHints.detected?.city && schemaHints.detected?.state && !config.cityStateValidationEnabled && (
+                          <button
+                            type="button"
+                            onClick={applyRecommendedValidation}
+                            className="h-7 px-2.5 rounded-full text-[10px] font-medium border transition-colors"
+                            style={{ borderColor: '#D9EBCF', background: '#F4FAF0', color: ACCENT_GREEN }}
+                          >
+                            Enable city/state validation
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quality + Top values (compact row) */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-phi-2 items-stretch">
+                    <DataQualityScoreCard
+                      compact
+                      data={fileData.data}
+                      headers={fileData.headers}
+                      config={config}
+                    />
+                    <TopValuesSpotlight data={fileData.data} headers={fileData.headers} />
+                  </div>
+
+                  {showBatchMode && (
+                    <BatchFileUpload
+                      config={config}
+                      onBatchComplete={(results) => {
+                        console.log('Batch processing complete:', results);
+                      }}
+                    />
+                  )}
+
+                  <PreviewTable
+                    data={fileData.data}
+                    headers={fileData.headers}
+                    title="Input Data Preview"
+                    companyNameColumn={config.companyNameColumn}
+                    onCompanyNameColumnChange={handleCompanyFieldSelection}
+                    suggestedCompanyColumn={
+                      !isCompanySuggestionAcknowledged ? suggestedCompanyColumn : ''
+                    }
+                    onSuggestedCompanyColumnApply={
+                      !isCompanySuggestionAcknowledged && suggestedCompanyColumn
+                        ? () => handleCompanyFieldSelection(suggestedCompanyColumn)
+                        : undefined
+                    }
+                    columnRenames={config.columnRenames}
+                    onColumnRename={handleColumnRename}
+                    excludedColumns={excludedColumns}
+                    onColumnExcludeToggle={handleColumnExcludeToggle}
+                    onOpenColumnProfiler={() => {
+                      setSelectedProfileColumn(
+                        config.companyNameColumn || fileData.headers[0] || ''
+                      );
+                      setShowColumnProfiler(true);
                     }}
                   />
-                )}
 
-                <PreviewTable
-                  data={fileData.data}
-                  headers={fileData.headers}
-                  title="Input Data Preview"
-                  companyNameColumn={config.companyNameColumn}
-                  onCompanyNameColumnChange={handleCompanyFieldSelection}
-                  suggestedCompanyColumn={
-                    !isCompanySuggestionAcknowledged ? suggestedCompanyColumn : ''
-                  }
-                  onSuggestedCompanyColumnApply={
-                    !isCompanySuggestionAcknowledged && suggestedCompanyColumn
-                      ? () => handleCompanyFieldSelection(suggestedCompanyColumn)
-                      : undefined
-                  }
-                  columnRenames={config.columnRenames}
-                  onColumnRename={handleColumnRename}
-                  excludedColumns={excludedColumns}
-                  onColumnExcludeToggle={handleColumnExcludeToggle}
-                />
-
-                <StatsPanel
-                  fileData={fileData}
-                  processedData={processedData}
-                  stats={processingStats}
-                  wordFrequencyConfig={{
-                    columns: derivedColumns,
-                    selectedColumns: config.wordFrequencyColumns,
-                    excludeStopwords: config.excludeStopwords,
-                    existingExclusions: exclusionList
-                  }}
-                  onWordFrequencyChange={{
-                    onColumnSelectionChange: (cols) => handleConfigChange({ wordFrequencyColumns: cols }),
-                    onExcludeStopwordsChange: (exclude) => handleConfigChange({ excludeStopwords: exclude }),
-                    onAddToExclusion: handleAddWordToExclusion
-                  }}
-                  onColumnProfilerOpen={() => setShowColumnProfiler(true)}
-                  onColumnSelect={setSelectedProfileColumn}
-                />
-
-                {/* Export panel */}
-                {processedData.length > 0 && (
-                  <ExportPanel
-                    customFilename={customFilename}
-                    onFilenameChange={setCustomFilename}
-                    onExportClean={() => handleExport({ enhanced: true, comparison: false })}
-                    onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
-                    isProcessing={isProcessing}
-                    hasResults={processedData.length > 0}
+                  <StatsPanel
+                    fileData={fileData}
+                    stats={processingStats}
+                    wordFrequencyConfig={{
+                      columns: derivedColumns,
+                      selectedColumns: config.wordFrequencyColumns,
+                      excludeStopwords: config.excludeStopwords,
+                      existingExclusions: exclusionList
+                    }}
+                    onWordFrequencyChange={{
+                      onColumnSelectionChange: (cols) => handleConfigChange({ wordFrequencyColumns: cols }),
+                      onExcludeStopwordsChange: (exclude) => handleConfigChange({ excludeStopwords: exclude }),
+                      onAddToExclusion: handleAddWordToExclusion
+                    }}
                   />
-                )}
 
-                {/* Footer hint */}
-                <div className="text-[11px] text-app-subtle flex items-center gap-2 pb-4">
-                  <Circle className="w-2 h-2 fill-current" />
-                  Configuration auto-saves. Click <span className="font-mono text-app-muted">Run Normalization</span> when ready.
-                </div>
-              </section>
+                  {/* Export panel */}
+                  {processedData.length > 0 && (
+                    <ExportPanel
+                      customFilename={customFilename}
+                      onFilenameChange={setCustomFilename}
+                      onExportClean={() => handleExport({ enhanced: true, comparison: false })}
+                      onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
+                      isProcessing={isProcessing}
+                      hasResults={processedData.length > 0}
+                    />
+                  )}
+                </section>
+              </div>
+
             </motion.div>
           )}
 
           {/* Results View */}
           {viewMode === 'results' && processingStats && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-              {/* Export panel at top of results */}
-              <ExportPanel
-                customFilename={customFilename}
-                onFilenameChange={setCustomFilename}
-                onExportClean={() => handleExport({ enhanced: true, comparison: false })}
-                onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
-                isProcessing={isProcessing}
-                hasResults={processedData.length > 0}
-              />
+            <div className="overflow-y-auto flex-1 h-full w-full pr-1 pb-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-phi-3">
+                {/* Export panel at top of results */}
+                <ExportPanel
+                  customFilename={customFilename}
+                  onFilenameChange={setCustomFilename}
+                  onExportClean={() => handleExport({ enhanced: true, comparison: false })}
+                  onExportAudit={() => handleExport({ enhanced: false, comparison: true })}
+                  isProcessing={isProcessing}
+                  hasResults={processedData.length > 0}
+                />
 
-              <ResultsDisplay
-                stats={processingStats}
-                originalData={fileData?.data || []}
-                processedData={processedData}
-                cumulativeStats={cumulativeStats}
-              />
-            </motion.div>
+                <ResultsDisplay
+                  stats={processingStats}
+                  originalData={fileData?.data || []}
+                  processedData={processedData}
+                  cumulativeStats={cumulativeStats}
+                />
+              </motion.div>
+            </div>
           )}
         </div>
       </main>

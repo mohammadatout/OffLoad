@@ -1,0 +1,13 @@
+# Local archive snapshot (duplicate of handover-era tree; not tracked)
+Archive/files/
+
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE & temporary
+.cursor/
+toes/
+Kaizen.md
+

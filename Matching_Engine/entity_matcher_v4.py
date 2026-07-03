@@ -1038,8 +1038,10 @@ class MultiStageEntityMatcher:
         
         # Statistics
         elapsed = time.time() - start_time
+        total_internal = len(internal_df)
+        match_rate = (len(all_matches) / total_internal * 100) if total_internal else 0.0
         stats = {
-            'total_internal': len(internal_df),
+            'total_internal': total_internal,
             'total_external': len(external_df),
             'stage_0_exact': len(results['stage_0_exact']),
             'stage_1_high_confidence': len(results['stage_1_high_confidence']),
@@ -1048,7 +1050,7 @@ class MultiStageEntityMatcher:
             'stage_4_review': len(results['stage_4_review']),
             'unmatched': len(results['unmatched']),
             'total_matched': len(all_matches),
-            'match_rate': len(all_matches) / len(internal_df) * 100,
+            'match_rate': match_rate,
             'elapsed_time': elapsed
         }
         

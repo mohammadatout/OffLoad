@@ -17,25 +17,24 @@ import {
 import { CSVRow, DataQualityScore } from '@/lib/types';
 import { calculateDataQualityScore } from '@/lib/dataProcessing';
 import { ProcessingConfig } from '@/lib/types';
+import { BRAND_PALETTE, scoreToColor } from '@/lib/brandPalette';
 import {
   ResponsiveContainer,
   RadialBarChart,
   RadialBar,
   PolarAngleAxis,
 } from 'recharts';
+import { cn } from '@/lib/utils';
 
 interface DataQualityScoreCardProps {
   data: CSVRow[];
   headers: string[];
   config: ProcessingConfig;
+  /** ~50% footprint: smaller gauge, type, and breakdown for side-by-side layout */
+  compact?: boolean;
 }
 
-const getScoreColor = (score: number): string => {
-  if (score >= 80) return '#10b981';
-  if (score >= 60) return '#f59e0b';
-  if (score >= 40) return '#f97316';
-  return '#ef4444';
-};
+const getScoreColor = (score: number): string => scoreToColor(score);
 
 const getScoreLabel = (score: number): string => {
   if (score >= 90) return 'Excellent';
@@ -45,24 +44,29 @@ const getScoreLabel = (score: number): string => {
   return 'Critical';
 };
 
-const getScoreIcon = (score: number): React.ReactNode => {
-  if (score >= 80) return <CheckCircle className="w-5 h-5" />;
-  if (score >= 60) return <AlertTriangle className="w-5 h-5" />;
-  return <XCircle className="w-5 h-5" />;
+const getScoreIcon = (score: number, compact: boolean): React.ReactNode => {
+  const cls = compact ? 'w-3.5 h-3.5' : 'w-5 h-5';
+  if (score >= 80) return <CheckCircle className={cls} />;
+  if (score >= 60) return <AlertTriangle className={cls} />;
+  return <XCircle className={cls} />;
 };
 
+/** Semicircle gauge — height derived from size so the arc clears the score label */
 const ScoreGauge: React.FC<{ score: number; size?: number }> = ({ score, size = 120 }) => {
   const color = getScoreColor(score);
   const data = [{ value: score, fill: color }];
+  const chartHeight = Math.round(size * 0.5) + 12;
 
   return (
-    <div className="relative" style={{ width: size, height: size / 2 + 20 }}>
-      <ResponsiveContainer width="100%" height={size}>
+    <div className="relative mx-auto overflow-hidden" style={{ width: size, height: chartHeight }}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <RadialBarChart
           data={data}
+          width={size}
+          height={chartHeight}
           startAngle={180}
           endAngle={0}
-          innerRadius="70%"
+          innerRadius="72%"
           outerRadius="100%"
           cx="50%"
           cy="100%"
@@ -71,21 +75,10 @@ const ScoreGauge: React.FC<{ score: number; size?: number }> = ({ score, size = 
           <RadialBar
             dataKey="value"
             cornerRadius={10}
-            background={{ fill: 'rgba(100,100,100,0.1)' }}
+            background={{ fill: BRAND_PALETTE.lightGray }}
           />
         </RadialBarChart>
       </ResponsiveContainer>
-      <div className="absolute inset-0 flex items-end justify-center pb-2">
-        <motion.span
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-2xl font-bold"
-          style={{ color }}
-        >
-          {score}
-        </motion.span>
-      </div>
     </div>
   );
 };
@@ -95,28 +88,39 @@ const MetricCard: React.FC<{
   value: number;
   icon: React.ReactNode;
   delay?: number;
-}> = ({ label, value, icon, delay = 0 }) => {
+  compact?: boolean;
+}> = ({ label, value, icon, delay = 0, compact = false }) => {
   const color = getScoreColor(value);
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="p-4 rounded-xl border border-light-border dark:border-dark-border bg-white dark:bg-dark-card"
+      className={cn(
+        'rounded-xl border bg-white dark:bg-dark-card',
+        compact ? 'p-1.5' : 'p-4'
+      )}
+      style={{ borderColor: BRAND_PALETTE.lightGray }}
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className={cn('flex items-center gap-1.5', compact ? 'mb-1' : 'mb-2')}>
         <span style={{ color }}>{icon}</span>
-        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+        <span
+          className={cn(
+            'font-medium uppercase dark:text-gray-400',
+            compact ? 'text-[9px] tracking-wide' : 'text-xs'
+          )}
+          style={{ color: BRAND_PALETTE.darkGray }}
+        >
           {label}
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-2xl font-bold" style={{ color }}>
+        <span className={cn('font-bold', compact ? 'text-sm' : 'text-2xl')} style={{ color }}>
           {value}%
         </span>
         <div
-          className="flex-1 h-2 rounded-full overflow-hidden"
+          className={cn('flex-1 rounded-full overflow-hidden', compact ? 'h-1' : 'h-2')}
           style={{ backgroundColor: `${color}20` }}
         >
           <motion.div
@@ -136,6 +140,7 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
   data,
   headers,
   config,
+  compact = false,
 }) => {
   const qualityScore = useMemo(() => {
     if (data.length === 0) return null;
@@ -148,24 +153,33 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
 
   const overallColor = getScoreColor(qualityScore.overall);
   const scoreLabel = getScoreLabel(qualityScore.overall);
-  
-  // Find columns with issues
-  const columnsWithIssues = qualityScore.columnScores.filter(c => c.issues.length > 0);
+  const columnsWithIssues = qualityScore.columnScores.filter((c) => c.issues.length > 0);
+
+  const gaugeSize = compact ? 74 : 160;
+  const iconSm = compact ? 'w-3.5 h-3.5' : 'w-4 h-4';
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <Card variant="obsidian" className={cn(compact && 'min-h-0 h-full flex flex-col')}>
+      <CardHeader className={cn(compact && 'py-phi-1 shrink-0')}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div
-              className="p-2 rounded-lg"
+              className={cn('rounded-lg shrink-0', compact ? 'p-1.5' : 'p-2')}
               style={{ backgroundColor: `${overallColor}20` }}
             >
-              <Shield className="w-6 h-6" style={{ color: overallColor }} />
+              <Shield
+                className={compact ? 'w-4 h-4' : 'w-6 h-6'}
+                style={{ color: overallColor }}
+              />
             </div>
-            <div>
-              <CardTitle>Data Quality Score</CardTitle>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="min-w-0">
+              <CardTitle className={compact ? 'text-xs' : undefined}>Data Quality Score</CardTitle>
+              <p
+                className={cn(
+                  'text-app-muted',
+                  compact ? 'text-[10px] leading-tight mt-0.5' : 'text-sm text-gray-500 dark:text-gray-400'
+                )}
+              >
                 Based on {data.length.toLocaleString()} records across {headers.length} columns
               </p>
             </div>
@@ -173,123 +187,180 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 shrink-0"
           >
             <Badge
-              variant={qualityScore.overall >= 80 ? 'success' : qualityScore.overall >= 60 ? 'warning' : 'danger'}
+              variant={
+                qualityScore.overall >= 80
+                  ? 'success'
+                  : qualityScore.overall >= 60
+                    ? 'warning'
+                    : qualityScore.overall >= 40
+                      ? 'poor'
+                      : 'danger'
+              }
+              className={compact ? 'text-[10px] px-1.5 py-0' : undefined}
             >
-              <span className="flex items-center gap-1">
-                {getScoreIcon(qualityScore.overall)}
+              <span className="flex items-center gap-0.5">
+                {getScoreIcon(qualityScore.overall, compact)}
                 {scoreLabel}
               </span>
             </Badge>
           </motion.div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Overall Score */}
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="flex flex-col items-center">
-            <ScoreGauge score={qualityScore.overall} size={160} />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Overall Score</p>
+      <CardContent
+        className={cn(compact ? 'space-y-2.5 flex-1 min-h-0' : 'space-y-6', compact && 'py-phi-1.5')}
+      >
+        <div
+          className={cn(
+            'flex flex-col items-center gap-2.5',
+            !compact && 'md:flex-row md:gap-6'
+          )}
+        >
+          <div className="flex flex-col items-center shrink-0">
+            <ScoreGauge score={qualityScore.overall} size={gaugeSize} />
+            <motion.span
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className={cn('font-bold', compact ? 'text-base mt-0' : 'text-2xl mt-2')}
+              style={{ color: overallColor }}
+            >
+              {qualityScore.overall}
+            </motion.span>
+            <p
+              className={cn(
+                'text-app-muted',
+                compact ? 'text-[10px] mt-0' : 'text-sm text-gray-500 dark:text-gray-400 mt-1'
+              )}
+            >
+              Overall Score
+            </p>
           </div>
-          
-          <div className="flex-1 grid grid-cols-2 gap-3">
+
+          <div className={cn('grid grid-cols-2 w-full', compact ? 'gap-1.5' : 'gap-3')}>
             <MetricCard
               label="Completeness"
               value={qualityScore.completeness}
-              icon={<Percent className="w-4 h-4" />}
+              icon={<Percent className={iconSm} />}
               delay={0.1}
+              compact={compact}
             />
             <MetricCard
               label="Validity"
               value={qualityScore.validity}
-              icon={<CheckCircle className="w-4 h-4" />}
+              icon={<CheckCircle className={iconSm} />}
               delay={0.2}
+              compact={compact}
             />
             <MetricCard
               label="Consistency"
               value={qualityScore.consistency}
-              icon={<Layers className="w-4 h-4" />}
+              icon={<Layers className={iconSm} />}
               delay={0.3}
+              compact={compact}
             />
             <MetricCard
               label="Uniqueness"
               value={qualityScore.uniqueness}
-              icon={<Fingerprint className="w-4 h-4" />}
+              icon={<Fingerprint className={iconSm} />}
               delay={0.4}
+              compact={compact}
             />
           </div>
         </div>
 
-        {/* Issues Summary */}
         {columnsWithIssues.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+            className={cn(
+              'rounded-xl border dark:border-gray-600',
+              compact ? 'p-2' : 'p-4'
+            )}
+            style={{
+              backgroundColor: `${BRAND_PALETTE.lightGray}99`,
+              borderColor: BRAND_PALETTE.darkGray,
+            }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              <h4 className="font-semibold text-amber-800 dark:text-amber-200">
+            <div className={cn('flex items-center gap-2', compact ? 'mb-1.5' : 'mb-3')}>
+              <AlertTriangle
+                className={cn('shrink-0', compact ? 'w-3.5 h-3.5' : 'w-5 h-5')}
+                style={{ color: BRAND_PALETTE.red }}
+              />
+              <h4
+                className={cn('font-semibold', compact ? 'text-xs' : undefined)}
+                style={{ color: BRAND_PALETTE.darkBlue }}
+              >
                 Data Quality Issues Detected
               </h4>
             </div>
-            <div className="space-y-2">
-              {columnsWithIssues.slice(0, 5).map((column, index) => (
-                <div
-                  key={column.column}
-                  className="flex items-start gap-2 text-sm"
-                >
-                  <span className="font-medium text-amber-700 dark:text-amber-300 min-w-[120px]">
+            <div className={cn('space-y-1', compact && 'text-[10px]')}>
+              {columnsWithIssues.slice(0, compact ? 3 : 5).map((column) => (
+                <div key={column.column} className={cn('flex items-start gap-2', !compact && 'text-sm')}>
+                  <span
+                    className={cn('font-medium shrink-0', compact ? 'min-w-[72px]' : 'min-w-[120px]')}
+                    style={{ color: BRAND_PALETTE.darkBlue }}
+                  >
                     {column.column}:
                   </span>
-                  <span className="text-amber-600 dark:text-amber-400">
-                    {column.issues.join(', ')}
-                  </span>
+                  <span style={{ color: BRAND_PALETTE.darkGray }}>{column.issues.join(', ')}</span>
                 </div>
               ))}
-              {columnsWithIssues.length > 5 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
-                  + {columnsWithIssues.length - 5} more columns with issues
+              {columnsWithIssues.length > (compact ? 3 : 5) && (
+                <p className="text-[10px] mt-1" style={{ color: BRAND_PALETTE.darkGray }}>
+                  + {columnsWithIssues.length - (compact ? 3 : 5)} more columns with issues
                 </p>
               )}
             </div>
           </motion.div>
         )}
 
-        {/* Column Breakdown */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
         >
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-accent-blue" />
+          <h4
+            className={cn(
+              'font-semibold text-app-text dark:text-gray-100 flex items-center gap-1.5',
+              compact ? 'text-[10px] mb-1.5' : 'text-sm mb-3'
+            )}
+          >
+            <TrendingUp className={compact ? 'w-3 h-3' : 'w-4 h-4'} style={{ color: BRAND_PALETTE.darkBlue }} />
             Column Quality Breakdown
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-            {qualityScore.columnScores.map((column, index) => {
+          <div
+            className={cn(
+              'grid grid-cols-1 md:grid-cols-2 gap-1.5 overflow-y-auto',
+              compact ? 'max-h-20 lg:grid-cols-2' : 'lg:grid-cols-3 gap-2 max-h-48'
+            )}
+          >
+            {qualityScore.columnScores.map((column) => {
               const avgScore = Math.round((column.completeness + column.validity) / 2);
               const color = getScoreColor(avgScore);
-              
+
               return (
                 <div
                   key={column.column}
-                  className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg dark:bg-gray-800/50',
+                    compact ? 'p-1.5' : 'p-2'
+                  )}
+                  style={{ backgroundColor: `${BRAND_PALETTE.lightGray}80` }}
                 >
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span
+                    className={cn(
+                      'text-gray-700 dark:text-gray-300 truncate flex-1',
+                      compact ? 'text-[10px]' : 'text-sm'
+                    )}
+                  >
                     {column.column}
                   </span>
-                  <span
-                    className="text-xs font-medium"
-                    style={{ color }}
-                  >
+                  <span className={cn('font-medium shrink-0', compact ? 'text-[10px]' : 'text-xs')} style={{ color }}>
                     {avgScore}%
                   </span>
                 </div>
@@ -301,4 +372,3 @@ export const DataQualityScoreCard: React.FC<DataQualityScoreCardProps> = ({
     </Card>
   );
 };
-

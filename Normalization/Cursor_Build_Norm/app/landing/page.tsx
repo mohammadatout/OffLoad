@@ -29,16 +29,14 @@ export default function LandingPage() {
     resize();
     window.addEventListener('resize', resize);
 
-    const chars = '·•∙+−|/\\TJ▪▫'.split('');
-    const N = 1400;
-    const points = Array.from({ length: N }, () => {
-      const t = Math.random() * Math.PI * 2;
-      const p = Math.acos(2 * Math.random() - 1);
+    const POINT_COUNT = 420;
+    const points = Array.from({ length: POINT_COUNT }, () => {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
       return {
-        t,
-        p,
-        char: chars[Math.floor(Math.random() * chars.length)],
-        size: 6 + Math.random() * 4,
+        theta,
+        phi,
+        phase: Math.random() * Math.PI * 2,
       };
     });
 
@@ -52,18 +50,65 @@ export default function LandingPage() {
       ctx.clearRect(0, 0, w, h);
       const cx = w / 2;
       const cy = h / 2;
-      const R = Math.min(w, h) * 0.42;
-      angle += 0.0012;
+      const radius = Math.min(w, h) * 0.4;
+      angle += 0.0038;
 
-      points.forEach((pt) => {
-        const x = R * Math.sin(pt.p) * Math.cos(pt.t + angle);
-        const y = R * Math.sin(pt.p) * Math.sin(pt.t + angle * 0.6);
-        const z = R * Math.cos(pt.p);
-        const scale = (z + R * 1.2) / (R * 2.2);
-        ctx!.fillStyle = `rgba(10,10,10,${0.25 + scale * 0.55})`;
-        ctx!.font = `${pt.size * scale}px ui-monospace, "JetBrains Mono", monospace`;
-        ctx!.fillText(pt.char, cx + x, cy + y);
+      const projected = points.map((pt) => {
+        const wave = 1 + Math.sin(angle + pt.phase) * 0.04;
+        const x0 = radius * wave * Math.sin(pt.phi) * Math.cos(pt.theta);
+        const y0 = radius * wave * Math.cos(pt.phi);
+        const z0 = radius * wave * Math.sin(pt.phi) * Math.sin(pt.theta);
+
+        const ry = angle;
+        const rx = angle * 0.45;
+        const cosY = Math.cos(ry);
+        const sinY = Math.sin(ry);
+        const cosX = Math.cos(rx);
+        const sinX = Math.sin(rx);
+
+        const x1 = x0 * cosY + z0 * sinY;
+        const z1 = -x0 * sinY + z0 * cosY;
+        const y2 = y0 * cosX - z1 * sinX;
+        const z2 = y0 * sinX + z1 * cosX;
+
+        const depth = (z2 + radius) / (radius * 2);
+        return {
+          x: cx + x1,
+          y: cy + y2,
+          z: z2,
+          depth,
+          alpha: 0.15 + depth * 0.75,
+        };
       });
+
+      for (let i = 0; i < projected.length; i++) {
+        for (let j = i + 1; j < projected.length; j++) {
+          const a = projected[i];
+          const b = projected[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 42) continue;
+          const lineAlpha = ((42 - dist) / 42) * Math.min(a.alpha, b.alpha) * 0.48;
+          if (lineAlpha < 0.03) continue;
+          ctx.strokeStyle = `rgba(10,10,10,${lineAlpha.toFixed(3)})`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      projected
+        .sort((a, b) => a.z - b.z)
+        .forEach((pt) => {
+          const dotRadius = 0.7 + pt.depth * 2.3;
+          ctx.fillStyle = `rgba(10,10,10,${pt.alpha.toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        });
 
       raf = requestAnimationFrame(render);
     }
@@ -76,19 +121,19 @@ export default function LandingPage() {
   }, []);
 
   const fadeUp = (delay: number) => ({
-    opacity: mounted ? 1 : 0,
-    transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+    opacity: 1,
+    transform: 'translateY(0)',
     transition: `opacity 0.8s ease-out ${delay}s, transform 0.8s ease-out ${delay}s`,
   });
 
   const fadeDown = (delay: number) => ({
-    opacity: mounted ? 1 : 0,
-    transform: mounted ? 'translateY(0)' : 'translateY(-12px)',
+    opacity: 1,
+    transform: 'translateY(0)',
     transition: `opacity 0.7s ease-out ${delay}s, transform 0.7s ease-out ${delay}s`,
   });
 
   return (
-    <div className="min-h-screen relative" style={{ background: '#F4F3EE', color: '#0A0A0A', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen relative" style={{ background: '#F4F3EE', color: '#080D44', fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Background grid */}
       <div style={{
         position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
@@ -112,12 +157,12 @@ export default function LandingPage() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <Link href="/workspace" style={{ fontSize: 13, color: '#0A0A0A', textDecoration: 'none', transition: 'color 0.3s' }}>
+          <Link href="/workspace" style={{ fontSize: 13, color: '#080D44', textDecoration: 'none', transition: 'color 0.3s' }}>
             Sign in
           </Link>
           <Link href="/workspace"
             style={{
-              background: '#0A0A0A', color: '#fff', fontSize: 13, fontWeight: 500,
+              background: '#080D44', color: '#fff', fontSize: 13, fontWeight: 500,
               padding: '0 16px', height: 36, borderRadius: 9999, display: 'inline-flex',
               alignItems: 'center', textDecoration: 'none', transition: 'background 0.3s',
             }}>
@@ -133,7 +178,7 @@ export default function LandingPage() {
           <div>
             {/* Eyebrow */}
             <div className="flex items-center gap-3" style={{ marginBottom: 32, ...fadeUp(0.25) }}>
-              <span style={{ width: 32, height: 1, background: '#0A0A0A' }} />
+              <span style={{ width: 32, height: 1, background: '#080D44' }} />
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
                 letterSpacing: '0.15em', textTransform: 'uppercase', color: '#6B6B66',
@@ -159,7 +204,7 @@ export default function LandingPage() {
                 >
                   <path
                     d="M2 8 Q50 2 100 6 T198 5"
-                    stroke="#0A0A0A"
+                    stroke="#080D44"
                     strokeWidth="3"
                     strokeLinecap="round"
                     fill="none"
@@ -187,7 +232,7 @@ export default function LandingPage() {
                   fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
                   border: 'none', cursor: 'pointer', borderRadius: 9999, height: 48,
                   display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: '#0A0A0A', color: '#fff', padding: '0 16px 0 20px',
+                  background: '#080D44', color: '#fff', padding: '0 16px 0 20px',
                   textDecoration: 'none', transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
                 }}>
                 Start Mapping
@@ -205,8 +250,8 @@ export default function LandingPage() {
                   fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500,
                   cursor: 'pointer', borderRadius: 9999, height: 48,
                   display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: 'transparent', color: '#0A0A0A',
-                  border: '1px solid #0A0A0A', padding: '0 20px',
+                  background: 'transparent', color: '#080D44',
+                  border: '1px solid #080D44', padding: '0 20px',
                   textDecoration: 'none', transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
                 }}>
                 Login
