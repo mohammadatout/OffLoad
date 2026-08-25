@@ -24,10 +24,52 @@ export default function ReviewQueue({ items, decisions, onDecisionsChange }: Rev
     return decisions.find(d => d.internalIdx === idx);
   }
 
+  function getMatchId(item: MatchResult): number | null {
+    const staged = Number(item.Staged_Match_ID);
+    if (!Number.isNaN(staged) && Number.isFinite(staged) && staged > 0) {
+      return staged;
+    }
+    const library = Number(item.Library_Match_ID);
+    if (!Number.isNaN(library) && Number.isFinite(library) && library > 0) {
+      return library;
+    }
+    return null;
+  }
+
   function setDecision(item: MatchResult, idx: number, candidate: string | null, accepted: boolean) {
     const internalName = String(item[Object.keys(item).find(k => k.includes('Internal') || k.includes('internal') || k === 'Full_Entity_Name') || ''] || '');
     const existing = decisions.filter(d => d.internalIdx !== idx);
-    onDecisionsChange([...existing, { internalIdx: idx, internalName, selectedCandidate: candidate, accepted }]);
+    const prior = getDecision(idx);
+    onDecisionsChange([
+      ...existing,
+      {
+        internalIdx: idx,
+        internalName,
+        selectedCandidate: candidate,
+        accepted,
+        notes: prior?.notes || '',
+        matchId: getMatchId(item),
+        actionChosen: true,
+      },
+    ]);
+  }
+
+  function setNotes(item: MatchResult, idx: number, notes: string) {
+    const existing = getDecision(idx);
+    const internalName = String(item[Object.keys(item).find(k => k.includes('Internal') || k.includes('internal') || k === 'Full_Entity_Name') || ''] || '');
+    const baselineCandidate = existing?.selectedCandidate || null;
+    const baselineAccepted = existing?.accepted ?? false;
+    const next: ReviewDecision = {
+      internalIdx: idx,
+      internalName,
+      selectedCandidate: baselineCandidate || null,
+      accepted: baselineAccepted,
+      notes,
+      matchId: existing?.matchId ?? getMatchId(item),
+      actionChosen: existing?.actionChosen ?? false,
+    };
+    const remaining = decisions.filter(d => d.internalIdx !== idx);
+    onDecisionsChange([...remaining, next]);
   }
 
   function parseCandidates(item: MatchResult): { name: string; score: string }[] {
@@ -52,6 +94,8 @@ export default function ReviewQueue({ items, decisions, onDecisionsChange }: Rev
       {items.map((item, idx) => {
         const candidates = parseCandidates(item);
         const decision = getDecision(idx);
+        const notes = decision?.notes || '';
+        const hasMatchId = decision?.matchId || getMatchId(item);
         const internalName = String(item[Object.keys(item).find(k => k.includes('Internal') || k.includes('internal') || k === 'Full_Entity_Name') || ''] || '');
 
         return (
@@ -113,16 +157,34 @@ export default function ReviewQueue({ items, decisions, onDecisionsChange }: Rev
               </button>
               <button
                 onClick={() => setDecision(item, idx, null, false)}
+                disabled={notes.trim().length === 0}
                 className="flex items-center gap-1 h-6 px-2 rounded text-[10px] font-medium transition-colors"
                 style={{
                   background: decision && !decision.accepted ? '#B8860B' : 'transparent',
                   color: decision && !decision.accepted ? '#fff' : '#6B6B66',
                   border: '1px solid #E5E3DC',
+                  opacity: notes.trim().length === 0 ? 0.5 : 1,
+                  cursor: notes.trim().length === 0 ? 'not-allowed' : 'pointer',
                 }}
               >
                 <X className="w-3 h-3" />
                 Reject
               </button>
+            </div>
+
+            <div className="mt-2">
+              <textarea
+                value={notes}
+                onChange={(event) => setNotes(item, idx, event.target.value)}
+                placeholder="Add review note (required for reject)."
+                className="w-full min-h-[64px] text-[11px] rounded-md px-2 py-1.5 border focus:outline-none focus:ring-2"
+                style={{ borderColor: '#E5E3DC', color: '#0A0A0A', background: '#fff' }}
+              />
+              {!hasMatchId && (
+                <p className="text-[10px] mt-1" style={{ color: '#B8860B' }}>
+                  This row has no saved match id yet, so approve/reject cannot be sent to the library.
+                </p>
+              )}
             </div>
           </div>
         );

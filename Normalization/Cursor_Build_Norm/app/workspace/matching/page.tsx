@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { MatchConfig, MatchResult, MatchStats, ReviewDecision } from '@/lib/matchingTypes';
 import { runMatching } from '@/lib/matcherApi';
+import { approveMatch, rejectMatch } from '@/lib/libraryApi';
 import MatchingConfigPanel from '@/components/matching/MatchingConfigPanel';
 import MatchingUpload from '@/components/matching/MatchingUpload';
 import MatchingResults from '@/components/matching/MatchingResults';
@@ -45,6 +46,11 @@ export default function MatchingPage() {
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [stats, setStats] = useState<MatchStats | null>(null);
   const [reviewDecisions, setReviewDecisions] = useState<ReviewDecision[]>([]);
+  const [libraryHits, setLibraryHits] = useState(0);
+  const [newlyStaged, setNewlyStaged] = useState(0);
+  const [suppressed, setSuppressed] = useState(0);
+  const [isSavingDecisions, setIsSavingDecisions] = useState(false);
+  const [saveSummary, setSaveSummary] = useState<string>('');
 
   const updateConfig = useCallback((update: Partial<MatchConfig>) => {
     setConfig(prev => ({ ...prev, ...update }));
@@ -91,6 +97,7 @@ export default function MatchingPage() {
     setError('');
     setView('running');
     setReviewDecisions([]);
+    setSaveSummary('');
 
     try {
       const matchConfig: MatchConfig = {
@@ -103,6 +110,9 @@ export default function MatchingPage() {
       const response = await runMatching(externalFile.file, internalFile.file, matchConfig);
       setResults(response.results);
       setStats(response.stats);
+      setLibraryHits(response.library_hits ?? 0);
+      setNewlyStaged(response.newly_staged ?? 0);
+      setSuppressed(response.suppressed ?? 0);
       setView('results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Matching failed');
@@ -116,6 +126,56 @@ export default function MatchingPage() {
     setStats(null);
     setReviewDecisions([]);
     setError('');
+    setLibraryHits(0);
+    setNewlyStaged(0);
+    setSuppressed(0);
+    setSaveSummary('');
+  }
+
+  async function handleSaveDecisions() {
+    if (reviewDecisions.length === 0) {
+      setSaveSummary('No review decisions to save.');
+      return;
+    }
+
+    setIsSavingDecisions(true);
+    setSaveSummary('');
+
+    let success = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const decision of reviewDecisions) {
+      if (!decision.actionChosen) {
+        skipped += 1;
+        continue;
+      }
+
+      if (!decision.matchId) {
+        failed += 1;
+        continue;
+      }
+
+      try {
+        if (decision.accepted) {
+          await approveMatch(decision.matchId, decision.notes || undefined);
+        } else {
+          if (!decision.notes.trim()) {
+            failed += 1;
+            continue;
+          }
+          await rejectMatch(decision.matchId, decision.notes.trim());
+        }
+        success += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setIsSavingDecisions(false);
+    setSaveSummary(
+      `Saved ${success} decision(s). ${failed > 0 ? `${failed} failed. ` : ''}${skipped > 0 ? `${skipped} skipped (no action chosen).` : ''}`.trim()
+    );
   }
 
   return (
@@ -235,8 +295,24 @@ export default function MatchingPage() {
                   <p className="text-[12px] mt-0.5" style={{ color: '#6B6B66' }}>
                     {stats.total_matched.toLocaleString()} matched of {stats.total_internal.toLocaleString()} external entities
                   </p>
+                  <p className="text-[11px] mt-1" style={{ color: '#6B6B66' }}>
+                    {libraryHits} resolved from library, {newlyStaged} staged, {suppressed} suppressed (previously rejected)
+                  </p>
+                  {saveSummary && (
+                    <p className="text-[11px] mt-1" style={{ color: '#080D44' }}>
+                      {saveSummary}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSaveDecisions}
+                    disabled={isSavingDecisions || reviewDecisions.length === 0}
+                    className="h-10 px-5 rounded-full text-[12px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ background: '#B8860B', color: '#FFFFFF' }}
+                  >
+                    {isSavingDecisions ? 'Saving...' : 'Save decisions to library'}
+                  </button>
                   <MatchingExport
                     results={results}
                     reviewDecisions={reviewDecisions}

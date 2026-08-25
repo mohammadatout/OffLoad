@@ -36,4 +36,15 @@ export interface ReviewDecision {
   internalName: string;
   selectedCandidate: string | null;
   accepted: boolean;
+  notes: string;
+  matchId: number | null;
+  actionChosen: boolean;
+}
+
+export interface MatchRunResponse {
+  results: MatchResult[];
+  stats: MatchStats;
+  library_hits?: number;
+  newly_staged?: number;
+  suppressed?: number;
 }

@@ -11,3 +11,21 @@ Archive/files/
 toes/
 Kaizen.md
 
+# OffLoad local database and backups
+offload.db*
+Matching_Engine/backups/
+
+# Secrets and virtualenvs
+.env
+.env.local
+.venv/
+**/.venv/
+
+# Pytest
+.pytest_cache/
+
+# Cisco account exports. These carry real account names and AE emails, and are
+# inputs to the importer rather than source. Keep them out of the repository.
+/Cisco SAVM List.csv
+/SAV_w_AM_SFDC_w_Goal_*.csv
+

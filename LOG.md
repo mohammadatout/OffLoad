@@ -42,3 +42,32 @@ Append-only. New entries go at the bottom with date.
 
 **Verification:** Next.js compiles cleanly without warnings or errors. HTTP requests to `/` and `/workspace` succeed on port 3000, and `/health` succeeds on port 8000.
 
+---
+
+## 2026-08-19 — Match library, Cisco account reference, and auth
+
+**Task / problem:** Matching had no memory, so every run re-scored entities that had already been resolved by hand. There was also no user model, no audit trail, and no place to hold Cisco account or account-manager data.
+
+**Solution / changes:**
+
+Backend (`Matching_Engine/`, new modules; `entity_matcher_v4.py` untouched):
+- `db.py`: SQLite foundation — WAL, foreign keys, transaction helper, and the full schema (`users`, `sessions`, `cisco_accounts`, `matches`, `match_history`, `import_batches`).
+- `auth.py`: Argon2id password hashing, users, and server-side sessions. Only a SHA-256 hash of each session token is stored. Failed logins burn comparable time so a missing username cannot be distinguished from a wrong password.
+- `seed_admin.py`: CLI that creates the first admin from environment variables.
+- `cisco_store.py`: streaming importer for the 35-column SQL export, keyed on `(savm_group_id, sfdc_account_name, state)`. Skips the export's trailing blank rows, replaces the table wholesale, and flags orphaned matches as `unlinked` instead of deleting them.
+- `match_store.py`: match creation, approval workflow, status transitions, snapshots, drift detection, audit history, and bulk match/deletion imports.
+- `matcher_service.py`: rewritten around the library. Adds auth, users, `/accounts/*`, `/matches/*`, `/match/run`, export, and `/admin/backup`. The original stateless `POST /match` is unchanged.
+
+Frontend (`Normalization/Cursor_Build_Norm/`):
+- Login page, `middleware.ts` route guard, and session-aware `AppShell` with Match Library and Admin tabs.
+- Match Library page: server-side filters, notes editing, approve/reject/delete with a notes modal, bulk approve, audit-history drawer, drift and unlinked badges, CSV export, pagination.
+- Admin page: high-confidence approval queue, reference import, historical-match import, deletion import, user management, and database backup.
+- API clients now target the `/api/matcher` rewrite with credentials, so session cookies stay same-origin.
+
+**Notable decisions:**
+- `argon2-cffi` directly instead of `passlib`, which adds a layer and is effectively unmaintained.
+- `check_same_thread=False` on connections: FastAPI runs sync dependencies on a worker thread while async endpoints run on the event loop. Safe because every request gets its own connection.
+- `/match/run` detects which uploaded file carries the SAVM group id and treats that as the Cisco reference, rather than trusting the internal/external labels. The workspace sends them swapped, which would otherwise store Cisco accounts as entities.
+
+**Verification:** `pytest Matching_Engine/tests/` — 146 passing. `npm run build` succeeds. The real 224k-row export imports in 2.3s (18 data rows, 224,288 blank rows skipped, all 35 headers recognised).
+

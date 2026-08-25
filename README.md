@@ -13,10 +13,25 @@ A unified browser-based data suite for CSV normalization and entity matching. On
 OffLoad takes messy CSV data and produces clean, matched entity records. The workflow is:
 
 1. **Normalize** your internal data (clean text, standardize formats, deduplicate)
-2. **Match** your internal entities against an external reference list using fuzzy multi-stage matching
-3. **Review** ambiguous matches and export final results
+2. **Match** your entities against the Cisco account reference using fuzzy multi-stage matching
+3. **Review** ambiguous matches, approve them, and export final results
+4. **Remember** — approved matches go into the match library, so later runs resolve them instantly
 
-Both tools live inside a single Next.js app at `http://localhost:3000`. Switch between them using tabs.
+The tools live inside a single Next.js app at `http://localhost:3000`. Switch between them using tabs.
+
+**Sign-in is required.** Create the first admin with `Matching_Engine/seed_admin.py`; see
+`Matching_Engine/README.md`. Tabs are Normalization, Matching Engine, Match Library, and
+Admin (admins only).
+
+### Match Library
+
+- Persistent memory of approved entity → Cisco account matches
+- Stage 1 is a library lookup: a known entity skips fuzzy scoring entirely
+- Approval workflow — 95%+ waits for an admin, below that for a reviewer, rejections require a reason
+- Rejections are remembered, so a refused pairing is never suggested again
+- Full audit history per match, with actor and timestamp
+- Cisco account reference with nominated account managers, refreshed by wholesale import
+- Soft deletes with restore; groups missing from a new import are flagged, never deleted
 
 ### Normalization
 
