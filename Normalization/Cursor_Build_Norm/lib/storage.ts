@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   CUMULATIVE_STATS: 'entitymatch_cumulative_stats',
   SAVED_CONFIGS: 'entitymatch_saved_configs',
   LAST_CONFIG: 'entitymatch_last_config',
+  MATCHING_PRIMARY_COLUMNS: 'entitymatch_matching_primary_columns',
 } as const;
 
 export const SAVED_CONFIGS_EVENT = 'entitymatch-saved-configs-updated';
@@ -376,6 +377,37 @@ export const loadLastConfiguration = (): ProcessingConfig | null => {
   } catch (error) {
     console.error('Failed to load last configuration:', error);
     return null;
+  }
+};
+
+export const saveMatchingPrimaryColumns = (columns: string[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MATCHING_PRIMARY_COLUMNS, JSON.stringify(columns));
+  } catch (error) {
+    console.error('Failed to save matching primary columns:', error);
+  }
+};
+
+export const loadMatchingPrimaryColumns = (): string[] | null => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.MATCHING_PRIMARY_COLUMNS);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed) || !parsed.every((item) => typeof item === 'string')) {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
+    console.error('Failed to load matching primary columns:', error);
+    return null;
+  }
+};
+
+export const clearMatchingPrimaryColumns = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.MATCHING_PRIMARY_COLUMNS);
+  } catch (error) {
+    console.error('Failed to clear matching primary columns:', error);
   }
 };
 

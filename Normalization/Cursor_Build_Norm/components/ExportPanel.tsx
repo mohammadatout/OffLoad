@@ -41,9 +41,9 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             disabled={isProcessing}
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Final files will be named like{' '}
+            Final files will be prefixed like{' '}
             <span className="font-semibold">
-              {customFilename || 'cleaned_data'}_YYYYMMDD_HHMMSS.csv
+              CLEANED_{customFilename || 'cleaned_data'}_MMM_DD.csv
             </span>
           </p>
         </div>

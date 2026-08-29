@@ -1,7 +1,10 @@
 import {
+  AccountExportResponse,
   AccountFacets,
   AccountFilters,
   AccountListResponse,
+  AccountOptionsResponse,
+  AllocationColumnSettings,
   BulkApproveResult,
   GroupSummary,
   ImportBatchSummary,
@@ -9,6 +12,8 @@ import {
   MatchHistoryItem,
   MatchLibraryItem,
   MatchListResponse,
+  PurgeAccountsResult,
+  SearchableOptionColumn,
 } from './libraryTypes';
 
 import { API_BASE, HEAVY_API_BASE } from './apiBase';
@@ -157,26 +162,158 @@ export function uploadBulkDeletionImport(file: File): Promise<ImportBatchSummary
   return uploadCsv('/matches/import-deletions', file);
 }
 
-export async function fetchAccounts(
-  params: AccountFilters = {}
-): Promise<AccountListResponse> {
+/** Shared filter serialization, so every account call sends the same shape. */
+export function buildAccountQuery(params: AccountFilters = {}): URLSearchParams {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
   if (params.state) query.set('state', params.state);
   if (params.vertical) query.set('vertical', params.vertical);
-  if (params.tier) query.set('tier', params.tier);
+  if (params.tier || params.sub_segment) query.set('tier', params.tier ?? params.sub_segment ?? '');
   if (params.segment) query.set('segment', params.segment);
   if (params.source) query.set('source', params.source);
+  if (params.sl2) query.set('sl2', params.sl2);
+  if (params.sl3) query.set('sl3', params.sl3);
+  if (params.sl4) query.set('sl4', params.sl4);
+  if (params.sl5) query.set('sl5', params.sl5);
+  if (params.sl6) query.set('sl6', params.sl6);
+  if (params.savm_group_id) query.set('savm_group_id', params.savm_group_id);
+  if (params.unified_account_name) {
+    query.set('unified_account_name', params.unified_account_name);
+  }
+  return query;
+}
+
+export async function fetchAccounts(
+  params: AccountFilters = {},
+  signal?: AbortSignal
+): Promise<AccountListResponse> {
+  const query = buildAccountQuery(params);
   query.set('limit', String(params.limit ?? 50));
   query.set('offset', String(params.offset ?? 0));
 
-  const response = await checkedFetch(`${API_BASE}/accounts?${query}`);
+  const response = await checkedFetch(`${API_BASE}/accounts?${query}`, { signal });
   return (await response.json()) as AccountListResponse;
 }
 
-export async function fetchAccountFacets(): Promise<AccountFacets> {
-  const response = await checkedFetch(`${API_BASE}/accounts/facets`);
+export async function fetchAccountFacets(
+  params: AccountFilters = {},
+  signal?: AbortSignal
+): Promise<AccountFacets> {
+  const query = buildAccountQuery(params);
+  if (params.sl6_search) query.set('sl6_search', params.sl6_search);
+  const response = await checkedFetch(`${API_BASE}/accounts/facets?${query.toString()}`, {
+    signal,
+  });
   return (await response.json()) as AccountFacets;
+}
+
+/**
+ * Options for one high-cardinality dropdown. The list is derived server-side so
+ * a column with hundreds of thousands of distinct values never reaches the
+ * browser in full.
+ */
+export async function fetchAccountOptions(
+  column: SearchableOptionColumn,
+  query: string,
+  params: AccountFilters = {},
+  signal?: AbortSignal
+): Promise<AccountOptionsResponse> {
+  const search = buildAccountQuery(params);
+  search.set('column', column);
+  if (query.trim()) search.set('query', query.trim());
+  const response = await checkedFetch(`${API_BASE}/accounts/options?${search.toString()}`, {
+    signal,
+  });
+  return (await response.json()) as AccountOptionsResponse;
+}
+
+/**
+ * The filtered rows as JSON. Capped server-side, so only for small sets.
+ * Use `downloadAccountsWorkbook` for a real export.
+ */
+export async function fetchAllAccounts(
+  params: AccountFilters = {}
+): Promise<AccountExportResponse> {
+  const query = buildAccountQuery(params);
+  const response = await checkedFetch(
+    `${HEAVY_API_BASE}/accounts/export?${query.toString()}`
+  );
+  return (await response.json()) as AccountExportResponse;
+}
+
+function triggerBrowserDownload(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function fileNameFromDisposition(header: string | null, fallback: string): string {
+  const match = header?.match(/filename="?([^";]+)"?/i);
+  return match?.[1] ?? fallback;
+}
+
+/**
+ * Download every row matching the filters as an Excel workbook.
+ *
+ * The workbook is built by the API, not here: the reference runs to a few
+ * hundred thousand rows, and assembling that in the browser meant transferring
+ * hundreds of megabytes of JSON first. Goes direct to the API because the Next
+ * dev proxy drops requests that run long.
+ */
+export async function downloadAccountsWorkbook(
+  params: AccountFilters = {},
+  options: { includeInactive?: boolean; columns?: string[] } = {}
+): Promise<string> {
+  const query = buildAccountQuery(params);
+  if (options.includeInactive) query.set('include_inactive', 'true');
+  if (options.columns?.length) query.set('columns', options.columns.join(','));
+
+  const response = await checkedFetch(
+    `${HEAVY_API_BASE}/accounts/export.xlsx?${query.toString()}`
+  );
+  const blob = await response.blob();
+  const fileName = fileNameFromDisposition(
+    response.headers.get('Content-Disposition'),
+    'ALLOCATION_ae_accounts.xlsx'
+  );
+  triggerBrowserDownload(blob, fileName);
+  return fileName;
+}
+
+export async function fetchAllocationColumns(): Promise<AllocationColumnSettings> {
+  const response = await checkedFetch(`${API_BASE}/settings/allocation-columns`);
+  return (await response.json()) as AllocationColumnSettings;
+}
+
+export async function saveAllocationColumns(
+  columns: string[]
+): Promise<AllocationColumnSettings> {
+  const response = await checkedFetch(`${API_BASE}/settings/allocation-columns`, {
+    method: 'PUT',
+    ...asJsonBody({ columns }),
+  });
+  return (await response.json()) as AllocationColumnSettings;
+}
+
+export async function resetAllocationColumns(): Promise<AllocationColumnSettings> {
+  const response = await checkedFetch(`${API_BASE}/settings/allocation-columns/reset`, {
+    method: 'POST',
+  });
+  return (await response.json()) as AllocationColumnSettings;
+}
+
+/** Irreversible. Callers must export first; the endpoint does not. */
+export async function purgeAccounts(confirm: string): Promise<PurgeAccountsResult> {
+  const response = await checkedFetch(`${HEAVY_API_BASE}/accounts`, {
+    method: 'DELETE',
+    ...asJsonBody({ confirm }),
+  });
+  return (await response.json()) as PurgeAccountsResult;
 }
 
 export async function fetchGroup(savmGroupId: string): Promise<GroupSummary> {

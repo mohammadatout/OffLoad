@@ -180,8 +180,14 @@ export interface AccountFacets {
   state: string[];
   vertical: string[];
   tier: string[];
-  segment: string[];
   source: string[];
+  sl2: string[];
+  sl3: string[];
+  sl4: string[];
+  sl5: string[];
+  sl6: string[];
+  sl6_server_side: boolean;
+  sl6_min_search_chars: number;
   total_accounts: number;
   total_groups: number;
 }
@@ -191,10 +197,60 @@ export interface AccountFilters {
   state?: string;
   vertical?: string;
   tier?: string;
+  sub_segment?: string;
   segment?: string;
   source?: string;
+  sl2?: string;
+  sl3?: string;
+  sl4?: string;
+  sl5?: string;
+  sl6?: string;
+  savm_group_id?: string;
+  unified_account_name?: string;
+  sl6_search?: string;
   limit?: number;
   offset?: number;
+}
+
+/** Columns the reference exposes but which are too numerous for a plain list. */
+export type SearchableOptionColumn =
+  | 'savm_group_id'
+  | 'unified_account_name'
+  | 'savm_group_name'
+  | 'sfdc_account_name'
+  | 'sl6';
+
+export interface AccountOptionsResponse {
+  column: string;
+  query: string;
+  options: string[];
+  /** True when more values match than the limit returned. */
+  truncated: boolean;
+  min_search_chars: number;
+}
+
+export interface AllocationColumn {
+  key: string;
+  label: string;
+  group: string;
+}
+
+/** The AE Allocation column selection. Global: an admin sets it for everyone. */
+export interface AllocationColumnSettings {
+  available: AllocationColumn[];
+  selected: string[];
+  defaults: string[];
+  is_default: boolean;
+}
+
+export interface AccountExportResponse {
+  items: CiscoAccount[];
+  total: number;
+}
+
+export interface PurgeAccountsResult {
+  deleted: number;
+  newly_unlinked: number;
 }
 
 export interface GroupSummary {

@@ -1,9 +1,17 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { MatchConfig, MatchResult, MatchStats, ReviewDecision } from '@/lib/matchingTypes';
-import { runMatching } from '@/lib/matcherApi';
+import {
+  MatchConfig,
+  MatchResult,
+  MatchRunProgress,
+  MatchRunSummary,
+  MatchStageDefinition,
+  MatchStats,
+  ReviewDecision,
+} from '@/lib/matchingTypes';
+import { fetchMatchProgress, fetchMatchStages, runMatching } from '@/lib/matcherApi';
 import { approveMatch, rejectMatch } from '@/lib/libraryApi';
 import MatchingConfigPanel from '@/components/matching/MatchingConfigPanel';
 import MatchingUpload from '@/components/matching/MatchingUpload';
@@ -41,16 +49,34 @@ export default function MatchingPage() {
     use_state_blocking: false,
     use_context_validation: true,
     abbreviations: null,
+    skipped_stages: [],
   });
 
   const [results, setResults] = useState<MatchResult[] | null>(null);
   const [stats, setStats] = useState<MatchStats | null>(null);
+  const [stageLadder, setStageLadder] = useState<MatchStageDefinition[]>([]);
+  const [runSummary, setRunSummary] = useState<MatchRunSummary | null>(null);
+  const [runProgress, setRunProgress] = useState<MatchRunProgress | null>(null);
   const [reviewDecisions, setReviewDecisions] = useState<ReviewDecision[]>([]);
   const [libraryHits, setLibraryHits] = useState(0);
   const [newlyStaged, setNewlyStaged] = useState(0);
   const [suppressed, setSuppressed] = useState(0);
   const [isSavingDecisions, setIsSavingDecisions] = useState(false);
   const [saveSummary, setSaveSummary] = useState<string>('');
+
+  useEffect(() => {
+    let mounted = true;
+    fetchMatchStages()
+      .then((stages) => {
+        if (mounted) setStageLadder(stages);
+      })
+      .catch(() => {
+        if (mounted) setStageLadder([]);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const updateConfig = useCallback((update: Partial<MatchConfig>) => {
     setConfig(prev => ({ ...prev, ...update }));
@@ -72,21 +98,21 @@ export default function MatchingPage() {
       return {
         title: 'State Blocking is ON but no state-like column was detected in either file',
         detail:
-          'This usually causes zero matches. Add a state column, or turn off State Blocking before run.',
+          'The run will continue, but rows will be flagged as reference_state_missing and matching quality may drop.',
       };
     }
     if (!externalHasStateHint) {
       return {
         title: 'State Blocking is ON but external source appears to have no state column',
         detail:
-          'Matching quality may collapse to zero. Add state in source data or disable State Blocking.',
+          'The run will continue with a reference_state_missing flag on rows. Add a state column for stronger precision.',
       };
     }
     if (!internalHasStateHint) {
       return {
         title: 'State Blocking is ON but internal target appears to have no state column',
         detail:
-          'Matching quality may collapse to zero. Add a state-like target column or disable State Blocking.',
+          'Matching quality may drop because state comparisons are incomplete. Add a state-like target column when possible.',
       };
     }
     return null;
@@ -98,6 +124,37 @@ export default function MatchingPage() {
     setView('running');
     setReviewDecisions([]);
     setSaveSummary('');
+    setRunSummary(null);
+
+    const nextRunId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `run_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    setRunProgress({
+      run_id: nextRunId,
+      completed: false,
+      status: 'pending',
+      message: 'Preparing matcher run...',
+      completed_stage_ids: [],
+      skipped_stage_ids: config.skipped_stages ?? [],
+      warnings: [],
+    });
+
+    let pollTimer: number | null = null;
+    let polling = true;
+    const pollProgress = async () => {
+      try {
+        const progress = await fetchMatchProgress(nextRunId);
+        if (!polling) return;
+        setRunProgress(progress);
+        if (progress.completed && pollTimer != null) {
+          window.clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      } catch {
+        // Progress endpoint is best-effort; the run request remains the source of truth.
+      }
+    };
 
     try {
       const matchConfig: MatchConfig = {
@@ -107,16 +164,29 @@ export default function MatchingPage() {
         external_col: internalCol,
       };
 
-      const response = await runMatching(externalFile.file, internalFile.file, matchConfig);
+      await pollProgress();
+      pollTimer = window.setInterval(pollProgress, 800);
+
+      const response = await runMatching(externalFile.file, internalFile.file, matchConfig, nextRunId);
       setResults(response.results);
       setStats(response.stats);
       setLibraryHits(response.library_hits ?? 0);
       setNewlyStaged(response.newly_staged ?? 0);
       setSuppressed(response.suppressed ?? 0);
+      setRunSummary(response.run_summary ?? null);
+      if (response.stage_ladder && response.stage_ladder.length > 0) {
+        setStageLadder(response.stage_ladder);
+      }
       setView('results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Matching failed');
       setView('upload');
+      setRunSummary(null);
+    } finally {
+      polling = false;
+      if (pollTimer != null) {
+        window.clearInterval(pollTimer);
+      }
     }
   }
 
@@ -130,6 +200,8 @@ export default function MatchingPage() {
     setNewlyStaged(0);
     setSuppressed(0);
     setSaveSummary('');
+    setRunSummary(null);
+    setRunProgress(null);
   }
 
   async function handleSaveDecisions() {
@@ -181,7 +253,11 @@ export default function MatchingPage() {
   return (
     <div className="flex h-[calc(100vh-48px)] overflow-hidden">
       {/* Left rail - config */}
-      <MatchingConfigPanel config={config} onConfigChange={updateConfig} />
+      <MatchingConfigPanel
+        config={config}
+        stageLadder={stageLadder}
+        onConfigChange={updateConfig}
+      />
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto h-full pr-1 pb-4">
@@ -275,8 +351,15 @@ export default function MatchingPage() {
                 </div>
               </div>
               <p className="text-[12px]" style={{ color: '#6B6B66' }}>
-                Running matcher... This may take a moment for large files.
+                {runProgress?.current_stage_name
+                  ? `${runProgress.current_stage_name} — ${runProgress.comparison_target ?? ''}`
+                  : runProgress?.message || 'Running matcher... This may take a moment for large files.'}
               </p>
+              {runProgress?.warnings?.length ? (
+                <p className="text-[10px] text-center max-w-[560px]" style={{ color: '#B8860B' }}>
+                  {runProgress.warnings[0]}
+                </p>
+              ) : null}
               <style>{`
                 @keyframes indeterminate {
                   0% { transform: translateX(-100%); }
@@ -298,6 +381,16 @@ export default function MatchingPage() {
                   <p className="text-[11px] mt-1" style={{ color: '#6B6B66' }}>
                     {libraryHits} resolved from library, {newlyStaged} staged, {suppressed} suppressed (previously rejected)
                   </p>
+                  {runSummary && (
+                    <div className="mt-1 text-[11px]" style={{ color: '#6B6B66' }}>
+                      {runSummary.skipped_stages.length > 0
+                        ? `Skipped stages: ${runSummary.skipped_stages.join(', ')}.`
+                        : 'No stages were skipped.'}
+                      {runSummary.stage_1_skipped_warning ? (
+                        <span style={{ color: '#B8860B' }}> Stage 1 was skipped, so approved-library shortcuts were bypassed.</span>
+                      ) : null}
+                    </div>
+                  )}
                   {saveSummary && (
                     <p className="text-[11px] mt-1" style={{ color: '#080D44' }}>
                       {saveSummary}
@@ -333,6 +426,7 @@ export default function MatchingPage() {
               <MatchingResults
                 results={results}
                 stats={stats}
+                stageLadder={stageLadder}
                 reviewDecisions={reviewDecisions}
                 onReviewDecisionsChange={setReviewDecisions}
                 externalCol={externalCol}

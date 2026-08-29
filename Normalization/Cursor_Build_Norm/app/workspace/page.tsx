@@ -565,8 +565,8 @@ export default function Home() {
     }
 
     const dateTag = formatMonthDayTag();
-    const cleanedFilename = `${filename}_Cleaned_${dateTag}.csv`;
-    const comparisonFilename = `${filename}_Original_vs_Cleaned_${dateTag}.csv`;
+    const cleanedFilename = `CLEANED_${filename}_${dateTag}.csv`;
+    const comparisonFilename = `CLEANED_AUDIT_${filename}_${dateTag}.csv`;
 
     const baseColumns = config.outputColumns.length > 0
       ? config.outputColumns

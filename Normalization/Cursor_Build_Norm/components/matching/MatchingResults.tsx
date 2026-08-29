@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { MatchResult, MatchStats } from '@/lib/matchingTypes';
+import { MatchResult, MatchStageDefinition, MatchStats } from '@/lib/matchingTypes';
 import ReviewQueue from './ReviewQueue';
 import type { ReviewDecision } from '@/lib/matchingTypes';
 import { buildTaggedOrderedRow } from '@/lib/matchingOutput';
@@ -9,6 +9,7 @@ import { buildTaggedOrderedRow } from '@/lib/matchingOutput';
 interface MatchingResultsProps {
   results: MatchResult[];
   stats: MatchStats;
+  stageLadder: MatchStageDefinition[];
   reviewDecisions: ReviewDecision[];
   onReviewDecisionsChange: (decisions: ReviewDecision[]) => void;
   externalCol: string;
@@ -22,6 +23,7 @@ const ROWS_PER_PAGE = 50;
 export default function MatchingResults({
   results,
   stats,
+  stageLadder,
   reviewDecisions,
   onReviewDecisionsChange,
   externalCol,
@@ -68,7 +70,10 @@ export default function MatchingResults({
   }, [displayRows, firstColumns]);
 
   const reviewItems = useMemo(() =>
-    results.filter(r => r.Match_Stage === 'review'),
+    results.filter((r) => {
+      if (r.Review_Required === true) return true;
+      return String(r.Match_Stage ?? '').toLowerCase() === 'review';
+    }),
     [results]
   );
 
@@ -167,7 +172,7 @@ export default function MatchingResults({
       )}
 
       {activeTab === 'stages' && (
-        <StageBreakdown stats={stats} />
+        <StageBreakdown stats={stats} stageLadder={stageLadder} />
       )}
 
       {activeTab === 'review' && (
@@ -181,15 +186,40 @@ export default function MatchingResults({
   );
 }
 
-function StageBreakdown({ stats }: { stats: MatchStats }) {
-  const stages = [
-    { label: 'Stage 0 - Exact', count: stats.stage_0_exact, color: '#0A0A0A' },
-    { label: 'Stage 1 - High Confidence', count: stats.stage_1_high_confidence, color: '#0A0A0A' },
-    { label: 'Stage 2 - Confident', count: stats.stage_2_confident, color: '#0A0A0A' },
-    { label: 'Stage 3 - Probable', count: stats.stage_3_probable, color: '#0A0A0A' },
-    { label: 'Stage 4 - Review', count: stats.stage_4_review, color: '#B8860B' },
-    { label: 'Unmatched', count: stats.unmatched, color: '#6B6B66' },
-  ];
+function StageBreakdown({
+  stats,
+  stageLadder,
+}: {
+  stats: MatchStats;
+  stageLadder: MatchStageDefinition[];
+}) {
+  const orderedLadder = stageLadder.length
+    ? [...stageLadder].sort((a, b) => a.order - b.order)
+    : [];
+  const fallbackCounts: Record<string, number> = {
+    verified_library: 0,
+    exact_fuzzy_94: stats.stage_0_exact + stats.stage_1_high_confidence,
+    savm_lookup: stats.stage_2_confident,
+    sfdc_lookup: stats.stage_3_probable,
+    synonym_pass: 0,
+    opportunity_name: 0,
+    website_address: 0,
+  };
+  const stageCounts = stats.stage_counts ?? fallbackCounts;
+  const stages = orderedLadder.length
+    ? orderedLadder.map((stage) => ({
+        label: stage.name,
+        count: Number(stageCounts[stage.id] ?? 0),
+        color: '#0A0A0A',
+      }))
+    : [
+        { label: 'Stage 0 - Exact', count: stats.stage_0_exact, color: '#0A0A0A' },
+        { label: 'Stage 1 - High Confidence', count: stats.stage_1_high_confidence, color: '#0A0A0A' },
+        { label: 'Stage 2 - Confident', count: stats.stage_2_confident, color: '#0A0A0A' },
+        { label: 'Stage 3 - Probable', count: stats.stage_3_probable, color: '#0A0A0A' },
+        { label: 'Stage 4 - Review', count: stats.stage_4_review, color: '#B8860B' },
+      ];
+  stages.push({ label: 'Unmatched', count: stats.unmatched, color: '#6B6B66' });
 
   const maxCount = Math.max(...stages.map(s => s.count), 1);
 

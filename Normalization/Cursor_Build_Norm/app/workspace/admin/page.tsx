@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { DatabaseBackup } from 'lucide-react';
+import AccountsPurgePanel from '@/components/admin/AccountsPurgePanel';
+import AllocationColumnPicker from '@/components/admin/AllocationColumnPicker';
 import ApprovalQueue from '@/components/admin/ApprovalQueue';
 import CsvImportPanel from '@/components/admin/CsvImportPanel';
 import UserManager from '@/components/admin/UserManager';
@@ -53,6 +55,10 @@ export default function AdminPage() {
           resultTitle="Reference import result"
           upload={uploadAccountImport}
         />
+
+        <AllocationColumnPicker />
+
+        <AccountsPurgePanel />
 
         <CsvImportPanel
           title="Historical matches"

@@ -6,6 +6,7 @@ from cisco_store import (
     ValidationFailedError,
     flag_orphan_matches,
     get_account,
+    get_account_facets,
     get_group_accounts,
     get_group_summary,
     group_exists,
@@ -43,6 +44,11 @@ def _row(
     vertical="RETAIL",
     segment="ENTERPRISE",
     subsegment="ENT-FOCUS",
+    sl2="GLOBAL ENTERPRISE SEGMENT",
+    sl3="STR_GES WEST",
+    sl4="STR_RED RIVER OPERATION",
+    sl5="STR_NORTH_TX REGION",
+    sl6="STM_REGION_A",
 ):
     return ",".join(
         [
@@ -50,11 +56,11 @@ def _row(
             account_name,
             state,
             "Americas",
-            "GLOBAL ENTERPRISE SEGMENT",
-            "STR_GES WEST",
-            "STR_RED RIVER OPERATION",
-            "STR_NORTH_TX REGION",
-            "STM_REGION_A",
+            sl2,
+            sl3,
+            sl4,
+            sl5,
+            sl6,
             vertical,
             segment,
             subsegment,
@@ -326,6 +332,111 @@ def test_search_and_filters(db):
     assert list_accounts(db, vertical="MFG")["total"] == 1
     assert list_accounts(db, tier="ENT-FOCUS")["total"] == 2
     assert list_accounts(db, source="SAV+SFDC")["total"] == 2
+
+
+def test_sales_hierarchy_filters(db):
+    payload = _csv(
+        _row(
+            account_name="PS ALPHA",
+            sl2="US PS Market Segment",
+            sl3="PS-WEST",
+            sl4="PS-REGION-A",
+            sl5="PS-DIST-1",
+            sl6="PHOENIX WEST",
+        ),
+        _row(
+            account_name="PS BETA",
+            sl2="US PS Market Segment",
+            sl3="PS-WEST",
+            sl4="PS-REGION-A",
+            sl5="PS-DIST-2",
+            sl6="PHOENIX EAST",
+        ),
+        _row(
+            account_name="COMM ONE",
+            sl2="US COMMERCIAL",
+            sl3="COMM-NORTH",
+            sl4="COMM-REGION",
+            sl5="COMM-DIST",
+            sl6="COMM CITY",
+        ),
+    )
+    import_accounts_csv(db, payload, "export.csv", actor="admin")
+
+    assert list_accounts(db, sl2="US PS Market Segment")["total"] == 2
+    assert list_accounts(db, sl2="US PS Market Segment", sl3="PS-WEST")["total"] == 2
+    assert list_accounts(db, sl4="PS-REGION-A", sl5="PS-DIST-2")["total"] == 1
+    assert list_accounts(db, sl6="COMM CITY")["total"] == 1
+
+
+def test_facets_cascade_and_sl6_server_side_search(db):
+    payload = _csv(
+        _row(
+            account_name="PS ALPHA",
+            sl2="US PS Market Segment",
+            sl3="PS-WEST",
+            sl4="PS-REGION-A",
+            sl5="PS-DIST-1",
+            sl6="PHOENIX WEST",
+        ),
+        _row(
+            account_name="PS BETA",
+            sl2="US PS Market Segment",
+            sl3="PS-WEST",
+            sl4="PS-REGION-A",
+            sl5="PS-DIST-1",
+            sl6="PHOENIX EAST",
+        ),
+        _row(
+            account_name="PS GAMMA",
+            sl2="US PS Market Segment",
+            sl3="PS-EAST",
+            sl4="PS-REGION-B",
+            sl5="PS-DIST-2",
+            sl6="BOSTON CORE",
+        ),
+        _row(
+            account_name="COMM ONE",
+            sl2="US COMMERCIAL",
+            sl3="COMM-NORTH",
+            sl4="COMM-REGION",
+            sl5="COMM-DIST",
+            sl6="DALLAS CORE",
+        ),
+    )
+    import_accounts_csv(db, payload, "export.csv", actor="admin")
+
+    narrowed = get_account_facets(
+        db,
+        sl2="US PS Market Segment",
+        sl3="PS-WEST",
+        sl4="PS-REGION-A",
+        sl5="PS-DIST-1",
+    )
+    assert "sl1" not in narrowed
+    assert sorted(narrowed["sl5"]) == ["PS-DIST-1"]
+    assert sorted(narrowed["sl6"]) == ["PHOENIX EAST", "PHOENIX WEST"]
+
+    searched = get_account_facets(
+        db,
+        sl2="US PS Market Segment",
+        sl6_search="pho",
+    )
+    assert sorted(searched["sl6"]) == ["PHOENIX EAST", "PHOENIX WEST"]
+    assert searched["sl6_server_side"] is True
+    assert searched["sl6_min_search_chars"] == 3
+
+
+def test_sub_segment_filter_uses_tier_column(db):
+    payload = _csv(
+        _row(account_name="HIGH TOUCH", subsegment="PS-HIGH TOUCH"),
+        _row(account_name="VELOCITY", subsegment="PS-VELOCITY"),
+    )
+    import_accounts_csv(db, payload, "export.csv", actor="admin")
+
+    high_touch = list_accounts(db, tier="PS-HIGH TOUCH")
+    assert high_touch["total"] == 1
+    assert high_touch["items"][0]["sfdc_account_name"] == "HIGH TOUCH"
 
 
 def test_list_accounts_rejects_bad_pagination(db):

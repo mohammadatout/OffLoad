@@ -2,20 +2,26 @@
 
 import { useState } from 'react';
 import { ChevronRight, AlertTriangle, Plus, X } from 'lucide-react';
-import { MatchConfig } from '@/lib/matchingTypes';
+import { MatchConfig, MatchStageDefinition } from '@/lib/matchingTypes';
 import { Switch } from '@/components/ui/Switch';
 
 interface MatchingConfigPanelProps {
   config: MatchConfig;
+  stageLadder: MatchStageDefinition[];
   onConfigChange: (update: Partial<MatchConfig>) => void;
 }
 
-type Section = 'strategy' | 'abbreviations' | null;
+type Section = 'strategy' | 'stages' | 'abbreviations' | null;
 
-export default function MatchingConfigPanel({ config, onConfigChange }: MatchingConfigPanelProps) {
+export default function MatchingConfigPanel({
+  config,
+  stageLadder,
+  onConfigChange,
+}: MatchingConfigPanelProps) {
   const [openSection, setOpenSection] = useState<Section>(null);
   const [newAbbrevKey, setNewAbbrevKey] = useState('');
   const [newAbbrevVal, setNewAbbrevVal] = useState('');
+  const skippedStages = new Set(config.skipped_stages ?? []);
 
   function toggleSection(section: Section) {
     setOpenSection(openSection === section ? null : section);
@@ -34,6 +40,13 @@ export default function MatchingConfigPanel({ config, onConfigChange }: Matching
     const updated = { ...config.abbreviations };
     delete updated[key];
     onConfigChange({ abbreviations: Object.keys(updated).length > 0 ? updated : null });
+  }
+
+  function toggleStage(stageId: string, enabled: boolean) {
+    const current = new Set(config.skipped_stages ?? []);
+    if (enabled) current.delete(stageId);
+    else current.add(stageId);
+    onConfigChange({ skipped_stages: Array.from(current) });
   }
 
   return (
@@ -73,7 +86,7 @@ export default function MatchingConfigPanel({ config, onConfigChange }: Matching
                      style={{ background: '#FDF8E8', border: '1px solid #E5D5A0' }}>
                   <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: '#B8860B' }} />
                   <span style={{ color: '#6B6B66' }}>
-                    If external file has no state info, all matches will return zero.
+                    If the reference has no state column, OffLoad continues and flags rows for state mismatch review.
                   </span>
                 </div>
               )}
@@ -86,6 +99,50 @@ export default function MatchingConfigPanel({ config, onConfigChange }: Matching
                   onCheckedChange={(checked) => onConfigChange({ use_context_validation: checked })}
                 />
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Stage ladder controls */}
+        <div className="config-section" style={{ borderBottom: '1px solid #E5E3DC' }}>
+          <button
+            onClick={() => toggleSection('stages')}
+            className="config-section-header w-full flex items-center justify-between px-3 h-9 text-[12px] font-medium transition-colors"
+            style={{ color: '#0A0A0A' }}
+          >
+            <span>Stage Ladder</span>
+            <ChevronRight
+              className="w-3.5 h-3.5 transition-transform"
+              style={{ transform: openSection === 'stages' ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            />
+          </button>
+
+          {openSection === 'stages' && (
+            <div className="config-section-body px-3 pb-4 pt-2 flex flex-col gap-2">
+              <p className="text-[10px]" style={{ color: '#6B6B66' }}>
+                Toggle stages on/off for this run. Every stage is skippable, including Stage 1.
+              </p>
+              {stageLadder.map((stage) => {
+                const enabled = !skippedStages.has(stage.id);
+                return (
+                  <div key={stage.id} className="rounded border px-2 py-1.5" style={{ borderColor: '#E5E3DC' }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-medium truncate" style={{ color: '#0A0A0A' }}>
+                          {stage.name}
+                        </p>
+                        <p className="text-[10px] truncate" style={{ color: '#6B6B66' }}>
+                          {stage.comparison_target}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={(checked) => toggleStage(stage.id, checked)}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

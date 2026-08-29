@@ -108,7 +108,10 @@ export default function GroupDrawer({ savmGroupId, onClose }: GroupDrawerProps) 
                 </p>
                 <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
                   {[
-                    ['Vertical', group.vertical],
+                    // SAV Name lives here rather than in the allocation table,
+                    // which now shows the unified account name instead.
+                    ['SAV Name', group.savm_group_name],
+                    ['SAV Vertical', group.vertical],
                     ['Segment', group.segment],
                     ['Tier', group.tier],
                     ['Source', group.source],
@@ -164,7 +167,10 @@ export default function GroupDrawer({ savmGroupId, onClose }: GroupDrawerProps) 
                   <table className="w-full text-[11px]">
                     <thead style={{ background: '#F8F7F4', color: '#6B6B66' }}>
                       <tr>
-                        <th className="text-left px-2.5 py-1.5 font-medium">Account</th>
+                        <th className="text-left px-2.5 py-1.5 font-medium">SFDC Name</th>
+                        <th className="text-left px-2.5 py-1.5 font-medium">
+                          Unified Acc. Name
+                        </th>
                         <th className="text-left px-2.5 py-1.5 font-medium">State</th>
                         <th className="text-left px-2.5 py-1.5 font-medium">AE</th>
                         <th className="text-left px-2.5 py-1.5 font-medium">Confidence</th>
@@ -194,6 +200,9 @@ export default function GroupDrawer({ savmGroupId, onClose }: GroupDrawerProps) 
                                 )}
                                 {account.sfdc_account_name || '—'}
                               </span>
+                            </td>
+                            <td className="px-2.5 py-1.5" style={{ color: '#6B6B66' }}>
+                              {account.unified_account_name || '—'}
                             </td>
                             <td className="px-2.5 py-1.5" style={{ color: '#6B6B66' }}>
                               {account.state || '—'}

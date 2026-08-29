@@ -1,5 +1,10 @@
 import { API_BASE, HEAVY_API_BASE } from './apiBase';
-import { MatchConfig, MatchRunResponse } from './matchingTypes';
+import {
+  MatchConfig,
+  MatchRunProgress,
+  MatchRunResponse,
+  MatchStageDefinition,
+} from './matchingTypes';
 
 export async function checkHealth(): Promise<boolean> {
   try {
@@ -15,12 +20,14 @@ export async function checkHealth(): Promise<boolean> {
 export async function runMatching(
   internalFile: File,
   externalFile: File,
-  config: MatchConfig
+  config: MatchConfig,
+  runId?: string
 ): Promise<MatchRunResponse> {
   const formData = new FormData();
   formData.append('internal_file', internalFile);
   formData.append('external_file', externalFile);
   formData.append('config', JSON.stringify(config));
+  if (runId) formData.append('run_id', runId);
 
   // Direct to the API: match runs on large files outlast the dev proxy.
   const res = await fetch(`${HEAVY_API_BASE}/match/run`, {
@@ -36,10 +43,36 @@ export async function runMatching(
 
   const payload = (await res.json()) as MatchRunResponse;
   return {
+    run_id: payload.run_id,
     results: payload.results ?? [],
     stats: payload.stats,
     library_hits: payload.library_hits ?? 0,
     newly_staged: payload.newly_staged ?? 0,
     suppressed: payload.suppressed ?? 0,
+    stage_ladder: payload.stage_ladder ?? [],
+    run_summary: payload.run_summary,
   };
+}
+
+export async function fetchMatchStages(): Promise<MatchStageDefinition[]> {
+  const res = await fetch(`${API_BASE}/match/stages`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Matcher API returned ${res.status}`);
+  }
+  const payload = (await res.json()) as { stages?: MatchStageDefinition[] };
+  return payload.stages ?? [];
+}
+
+export async function fetchMatchProgress(runId: string): Promise<MatchRunProgress> {
+  const res = await fetch(`${HEAVY_API_BASE}/match/progress/${encodeURIComponent(runId)}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Matcher API returned ${res.status}`);
+  }
+  return (await res.json()) as MatchRunProgress;
 }
